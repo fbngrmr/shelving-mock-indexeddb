@@ -11,7 +11,7 @@
 	},
 	"dependencies": {
 		"babel-polyfill": "^6.26.0",
-		"shelving-mock-event": "^1.0.8"
+		"shelving-mock-event": "git://github.com/fbngrmr/shelving-mock-event#chore_transpile_es5"
 	},
 	"devDependencies": {
 		"babel-cli": "^6.26.0",
