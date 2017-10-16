@@ -1,14 +1,46 @@
 "use strict";
 
-var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+var _slicedToArray2 = require('babel-runtime/helpers/slicedToArray');
 
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+var _slicedToArray3 = _interopRequireDefault(_slicedToArray2);
 
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+var _getIterator2 = require('babel-runtime/core-js/get-iterator');
 
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+var _getIterator3 = _interopRequireDefault(_getIterator2);
 
-require("babel-polyfill");
+var _assign = require('babel-runtime/core-js/object/assign');
+
+var _assign2 = _interopRequireDefault(_assign);
+
+var _map = require('babel-runtime/core-js/map');
+
+var _map2 = _interopRequireDefault(_map);
+
+var _keys = require('babel-runtime/core-js/object/keys');
+
+var _keys2 = _interopRequireDefault(_keys);
+
+var _getPrototypeOf = require('babel-runtime/core-js/object/get-prototype-of');
+
+var _getPrototypeOf2 = _interopRequireDefault(_getPrototypeOf);
+
+var _possibleConstructorReturn2 = require('babel-runtime/helpers/possibleConstructorReturn');
+
+var _possibleConstructorReturn3 = _interopRequireDefault(_possibleConstructorReturn2);
+
+var _inherits2 = require('babel-runtime/helpers/inherits');
+
+var _inherits3 = _interopRequireDefault(_inherits2);
+
+var _freeze = require('babel-runtime/core-js/object/freeze');
+
+var _freeze2 = _interopRequireDefault(_freeze);
+
+var _classCallCheck2 = require('babel-runtime/helpers/classCallCheck');
+
+var _classCallCheck3 = _interopRequireDefault(_classCallCheck2);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var _require = require('shelving-mock-event'),
     Event = _require.Event,
@@ -28,14 +60,14 @@ var storage = {}; // Root storage.
 var IDBFactory =
 // Construct.
 function IDBFactory() {
-	_classCallCheck(this, IDBFactory);
+	(0, _classCallCheck3.default)(this, IDBFactory);
 
 	// Methods.
 	Object.defineProperty(this, 'open', { value: open });
 	Object.defineProperty(this, 'deleteDatabase', { value: deleteDatabase });
 
 	// Lock it down.
-	Object.freeze(this);
+	(0, _freeze2.default)(this);
 
 	// Open a connection.
 	function open(name, version) {
@@ -71,11 +103,11 @@ Object.defineProperty(IDBFactory, 'cmp', { value: function value(a, b) {
 // IDBDatabase database connection mock.
 
 var IDBDatabase = function (_EventTarget) {
-	_inherits(IDBDatabase, _EventTarget);
+	(0, _inherits3.default)(IDBDatabase, _EventTarget);
 
 	// Construct.
 	function IDBDatabase(dbName, version, data) {
-		_classCallCheck(this, IDBDatabase);
+		(0, _classCallCheck3.default)(this, IDBDatabase);
 
 		// Check params.
 		if (!validIdentifier(dbName)) throw new TypeError('IDBDatabase: dbName must be a valid identifier');
@@ -90,7 +122,7 @@ var IDBDatabase = function (_EventTarget) {
 		// 'versionchange' must close this connection or the connection in the other tab will be blocked (e.g. 'block' will be fired on the IDBOpenDBRequest).
 		// e.g. either call `this.close` or do a `window.location = window.location` to refresh the page.
 
-		var _this = _possibleConstructorReturn(this, (IDBDatabase.__proto__ || Object.getPrototypeOf(IDBDatabase)).call(this, null, ['abort', 'error', 'versionchange', 'close']));
+		var _this = (0, _possibleConstructorReturn3.default)(this, (IDBDatabase.__proto__ || (0, _getPrototypeOf2.default)(IDBDatabase)).call(this, null, ['abort', 'error', 'versionchange', 'close']));
 
 		_this.onerror = function (err) {
 			throw err;
@@ -109,7 +141,7 @@ var IDBDatabase = function (_EventTarget) {
 		Object.defineProperty(_this, 'objectStoreNames', {
 			enumerable: true,
 			get: function get() {
-				var names = Object.keys(data);names.sort();return names;
+				var names = (0, _keys2.default)(data);names.sort();return names;
 			},
 			set: function set() {
 				throw new Error('IDBDatabase: _data is read only');
@@ -133,7 +165,7 @@ var IDBDatabase = function (_EventTarget) {
 		Object.defineProperty(_this, '_run', { value: run }); // Secret _run() method.
 
 		// Lock it down.
-		Object.freeze(_this);
+		(0, _freeze2.default)(_this);
 
 		// Add this to list of open connections.
 		if (!connections[dbName]) connections[dbName] = [];
@@ -196,7 +228,7 @@ var IDBDatabase = function (_EventTarget) {
 			if (active._data[storeName]) throw new DOMException('IDBDatabase.createObjectStore(): Object store \'' + storeName + '\' already exists', 'ConstraintError');
 
 			// Create a plain data template for this object store.
-			active._data[storeName] = { records: new Map(), indexes: {}, key: 0, keyPath: keyPath, autoIncrement: autoIncrement };
+			active._data[storeName] = { records: new _map2.default(), indexes: {}, key: 0, keyPath: keyPath, autoIncrement: autoIncrement };
 
 			// Make and return the new IDBObjectStore.
 			return new IDBObjectStore(active, storeName);
@@ -272,13 +304,12 @@ var IDBDatabase = function (_EventTarget) {
 
 
 var IDBTransaction = function (_EventTarget2) {
-	_inherits(IDBTransaction, _EventTarget2);
+	(0, _inherits3.default)(IDBTransaction, _EventTarget2);
 
 	// Construct.
 	function IDBTransaction(db, storeNames) {
 		var mode = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'readonly';
-
-		_classCallCheck(this, IDBTransaction);
+		(0, _classCallCheck3.default)(this, IDBTransaction);
 
 		// Check params.
 		if (!(db instanceof IDBDatabase)) throw new TypeError('IDBTransaction: db must be an IDBDatabase');
@@ -298,9 +329,9 @@ var IDBTransaction = function (_EventTarget2) {
 		// EventTarget.
 
 		// Freeze store names.
-		var _this3 = _possibleConstructorReturn(this, (IDBTransaction.__proto__ || Object.getPrototypeOf(IDBTransaction)).call(this, db, ['complete', 'error', 'abort']));
+		var _this3 = (0, _possibleConstructorReturn3.default)(this, (IDBTransaction.__proto__ || (0, _getPrototypeOf2.default)(IDBTransaction)).call(this, db, ['complete', 'error', 'abort']));
 
-		Object.freeze(storeNames);
+		(0, _freeze2.default)(storeNames);
 
 		// Properties.
 		Object.defineProperty(_this3, 'db', { value: db, enumerable: true });
@@ -338,7 +369,7 @@ var IDBTransaction = function (_EventTarget2) {
 		Object.defineProperty(_this3, '_run', { value: run }); // Secret _run() method.
 
 		// Lock it down.
-		Object.freeze(_this3);
+		(0, _freeze2.default)(_this3);
 
 		// Get object store.
 		function objectStore(storeName) {
@@ -397,9 +428,9 @@ var IDBTransaction = function (_EventTarget2) {
 			for (var store in original) {
 				// This is fussy because we need to clone the records Map manually.
 				// clone() borks at any non-JSON values.
-				data[store] = Object.assign({}, original[store], {
-					records: new Map(original[store].records),
-					indexes: Object.assign({}, original[store].indexes)
+				data[store] = (0, _assign2.default)({}, original[store], {
+					records: new _map2.default(original[store].records),
+					indexes: (0, _assign2.default)({}, original[store].indexes)
 				});
 			}
 
@@ -442,11 +473,11 @@ var IDBTransaction = function (_EventTarget2) {
 
 
 var IDBRequest = function (_EventTarget3) {
-	_inherits(IDBRequest, _EventTarget3);
+	(0, _inherits3.default)(IDBRequest, _EventTarget3);
 
 	// Construct.
 	function IDBRequest(input, callback) {
-		_classCallCheck(this, IDBRequest);
+		(0, _classCallCheck3.default)(this, IDBRequest);
 
 		// Check params.
 		var transaction = void 0,
@@ -472,7 +503,7 @@ var IDBRequest = function (_EventTarget3) {
 		// EventTarget.
 
 		// Properties.
-		var _this4 = _possibleConstructorReturn(this, (IDBRequest.__proto__ || Object.getPrototypeOf(IDBRequest)).call(this, transaction, ['success', 'error']));
+		var _this4 = (0, _possibleConstructorReturn3.default)(this, (IDBRequest.__proto__ || (0, _getPrototypeOf2.default)(IDBRequest)).call(this, transaction, ['success', 'error']));
 
 		Object.defineProperty(_this4, 'transaction', { value: transaction, enumerable: true });
 		Object.defineProperty(_this4, 'source', { value: source, enumerable: true });
@@ -510,7 +541,7 @@ var IDBRequest = function (_EventTarget3) {
 		Object.defineProperty(_this4, '_abort', { value: abort }); // Secret _abort() method.
 
 		// Lock it down.
-		Object.freeze(_this4);
+		(0, _freeze2.default)(_this4);
 
 		// Run this request.
 		function run() {
@@ -552,13 +583,13 @@ var IDBRequest = function (_EventTarget3) {
 
 
 var IDBOpenDBRequest = function (_EventTarget4) {
-	_inherits(IDBOpenDBRequest, _EventTarget4);
+	(0, _inherits3.default)(IDBOpenDBRequest, _EventTarget4);
 
 	// Construct.
 	function IDBOpenDBRequest(dbName, version) {
 		var _this5;
 
-		_classCallCheck(this, IDBOpenDBRequest);
+		(0, _classCallCheck3.default)(this, IDBOpenDBRequest);
 
 		// Checks.
 		if (!validIdentifier(dbName)) throw new TypeError('IDBOpenDBRequest: dbName must be valid identifier');
@@ -570,7 +601,7 @@ var IDBOpenDBRequest = function (_EventTarget4) {
 		var transaction = null; // Transaction under this request.
 
 		// EventTarget.
-		var request = (_this5 = _possibleConstructorReturn(this, (IDBOpenDBRequest.__proto__ || Object.getPrototypeOf(IDBOpenDBRequest)).call(this, null, ['success', 'error', 'blocked', 'upgradeneeded'])), _this5);
+		var request = (_this5 = (0, _possibleConstructorReturn3.default)(this, (IDBOpenDBRequest.__proto__ || (0, _getPrototypeOf2.default)(IDBOpenDBRequest)).call(this, null, ['success', 'error', 'blocked', 'upgradeneeded'])), _this5);
 
 		// Properties.
 		Object.defineProperty(_this5, 'transaction', {
@@ -608,7 +639,7 @@ var IDBOpenDBRequest = function (_EventTarget4) {
 		});
 
 		// Lock it down.
-		Object.freeze(_this5);
+		(0, _freeze2.default)(_this5);
 
 		// Open requests automatically run.
 		// Allow 20ms — enough time for user to attach handlers etc.
@@ -715,7 +746,7 @@ var IDBOpenDBRequest = function (_EventTarget4) {
 var IDBObjectStore =
 // Construct.
 function IDBObjectStore(transaction, storeName) {
-	_classCallCheck(this, IDBObjectStore);
+	(0, _classCallCheck3.default)(this, IDBObjectStore);
 
 	// Check params.
 	if (!(transaction instanceof IDBTransaction)) throw new TypeError('IDBObjectStore: transaction must be a transaction');
@@ -740,7 +771,7 @@ function IDBObjectStore(transaction, storeName) {
 	Object.defineProperty(this, 'indexNames', {
 		enumerable: true,
 		get: function get() {
-			var names = Object.keys(transaction._data[storeName].indexes);names.sort();return names;
+			var names = (0, _keys2.default)(transaction._data[storeName].indexes);names.sort();return names;
 		},
 		set: function set() {
 			throw new Error('IDBObjectStore: indexNames is read only');
@@ -760,7 +791,7 @@ function IDBObjectStore(transaction, storeName) {
 	Object.defineProperty(this, 'deleteIndex', { value: deleteIndex });
 
 	// Lock it down.
-	Object.freeze(this);
+	(0, _freeze2.default)(this);
 
 	// Count documents.
 	function count() {
@@ -927,8 +958,8 @@ function IDBObjectStore(transaction, storeName) {
 			var _iteratorError = undefined;
 
 			try {
-				for (var _iterator = records[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-					var _step$value = _slicedToArray(_step.value, 1),
+				for (var _iterator = (0, _getIterator3.default)(records), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+					var _step$value = (0, _slicedToArray3.default)(_step.value, 1),
 					    primary = _step$value[0];
 
 					if (keyInRange(primary, range)) records.delete(primary);
@@ -1033,7 +1064,7 @@ function IDBObjectStore(transaction, storeName) {
 var IDBIndex =
 // Construct.
 function IDBIndex(store, indexName) {
-	_classCallCheck(this, IDBIndex);
+	(0, _classCallCheck3.default)(this, IDBIndex);
 
 	// Check params.
 	if (!(store instanceof IDBObjectStore)) throw new TypeError('IDBIndex: store must be an IDBObjectStore');
@@ -1068,7 +1099,7 @@ function IDBIndex(store, indexName) {
 	Object.defineProperty(this, 'openCursor', { value: openCursor });
 
 	// Lock it down.
-	Object.freeze(this);
+	(0, _freeze2.default)(this);
 
 	// Count documents.
 	function count() {
@@ -1174,8 +1205,7 @@ function IDBCursor(request) {
 	var range = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : undefined;
 	var direction = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'next';
 	var withValue = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
-
-	_classCallCheck(this, IDBCursor);
+	(0, _classCallCheck3.default)(this, IDBCursor);
 
 	// Check params.
 	if (!(request instanceof IDBRequest)) throw new TypeError('IDBCursor: request must be an IDBRequest');
@@ -1245,7 +1275,7 @@ function IDBCursor(request) {
 	if (withValue) Object.defineProperty(this, 'update', { value: update });
 
 	// Lock it down.
-	Object.freeze(this);
+	(0, _freeze2.default)(this);
 
 	// Functions.
 	function progress() {
@@ -1355,8 +1385,8 @@ function IDBCursor(request) {
 			var _iteratorError2 = undefined;
 
 			try {
-				for (var _iterator2 = records[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-					var _step2$value = _slicedToArray(_step2.value, 2),
+				for (var _iterator2 = (0, _getIterator3.default)(records), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+					var _step2$value = (0, _slicedToArray3.default)(_step2.value, 2),
 					    primary = _step2$value[0],
 					    _value = _step2$value[1];
 
@@ -1386,8 +1416,8 @@ function IDBCursor(request) {
 			var _iteratorError3 = undefined;
 
 			try {
-				for (var _iterator3 = records[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-					var _step3$value = _slicedToArray(_step3.value, 1),
+				for (var _iterator3 = (0, _getIterator3.default)(records), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+					var _step3$value = (0, _slicedToArray3.default)(_step3.value, 1),
 					    primary = _step3$value[0];
 
 					if (range === undefined || keyInRange(primary, range)) keys.push([primary, primary]);
@@ -1428,17 +1458,16 @@ function IDBCursor(request) {
 
 
 var IDBCursorWithValue = function (_IDBCursor) {
-	_inherits(IDBCursorWithValue, _IDBCursor);
+	(0, _inherits3.default)(IDBCursorWithValue, _IDBCursor);
 
 	// Construct.
 	function IDBCursorWithValue(request) {
 		var range = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : undefined;
 		var direction = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'next';
-
-		_classCallCheck(this, IDBCursorWithValue);
+		(0, _classCallCheck3.default)(this, IDBCursorWithValue);
 
 		// Super.
-		return _possibleConstructorReturn(this, (IDBCursorWithValue.__proto__ || Object.getPrototypeOf(IDBCursorWithValue)).call(this, request, range, direction, true));
+		return (0, _possibleConstructorReturn3.default)(this, (IDBCursorWithValue.__proto__ || (0, _getPrototypeOf2.default)(IDBCursorWithValue)).call(this, request, range, direction, true));
 	}
 
 	return IDBCursorWithValue;
@@ -1452,8 +1481,7 @@ var IDBKeyRange =
 function IDBKeyRange(lower, upper) {
 	var lowerOpen = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
 	var upperOpen = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
-
-	_classCallCheck(this, IDBKeyRange);
+	(0, _classCallCheck3.default)(this, IDBKeyRange);
 
 	// Checks.
 	if (!validKey(lower) && lower !== undefined) throw new DOMException('IDBKeyRange: lower must be a valid key (string, number, date) or undefined', 'DataError');
@@ -1472,7 +1500,7 @@ function IDBKeyRange(lower, upper) {
 	Object.defineProperty(this, 'includes', { value: includes });
 
 	// Lock it down.
-	Object.freeze(this);
+	(0, _freeze2.default)(this);
 
 	// Whether or not the given value is included in this range.
 	function includes(key) {
@@ -1552,11 +1580,11 @@ IDBKeyRange.upperBound = function (value) {
 // IDBVersionChangeEvent mock.
 
 var IDBVersionChangeEvent = function (_Event) {
-	_inherits(IDBVersionChangeEvent, _Event);
+	(0, _inherits3.default)(IDBVersionChangeEvent, _Event);
 
 	// Construct.
 	function IDBVersionChangeEvent(name, oldVersion, newVersion) {
-		_classCallCheck(this, IDBVersionChangeEvent);
+		(0, _classCallCheck3.default)(this, IDBVersionChangeEvent);
 
 		// Check.
 		if (typeof name !== 'string') throw new TypeError('IDBVersionChangeEvent: name must be string');
@@ -1566,13 +1594,13 @@ var IDBVersionChangeEvent = function (_Event) {
 		// Super.
 
 		// Public.
-		var _this7 = _possibleConstructorReturn(this, (IDBVersionChangeEvent.__proto__ || Object.getPrototypeOf(IDBVersionChangeEvent)).call(this, name, { bubbles: false, cancelable: false }));
+		var _this7 = (0, _possibleConstructorReturn3.default)(this, (IDBVersionChangeEvent.__proto__ || (0, _getPrototypeOf2.default)(IDBVersionChangeEvent)).call(this, name, { bubbles: false, cancelable: false }));
 
 		Object.defineProperty(_this7, 'oldVersion', { value: oldVersion, enumerable: true });
 		Object.defineProperty(_this7, 'newVersion', { value: newVersion, enumerable: true });
 
 		// Lock it down.
-		Object.freeze(_this7);
+		(0, _freeze2.default)(_this7);
 		return _this7;
 	}
 
@@ -1584,17 +1612,16 @@ var IDBVersionChangeEvent = function (_Event) {
 
 
 var DOMException = function (_Error) {
-	_inherits(DOMException, _Error);
+	(0, _inherits3.default)(DOMException, _Error);
 
 	// Construct.
 	function DOMException() {
 		var message = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
 		var name = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '';
-
-		_classCallCheck(this, DOMException);
+		(0, _classCallCheck3.default)(this, DOMException);
 
 		// Check.
-		var _this8 = _possibleConstructorReturn(this, (DOMException.__proto__ || Object.getPrototypeOf(DOMException)).call(this, message));
+		var _this8 = (0, _possibleConstructorReturn3.default)(this, (DOMException.__proto__ || (0, _getPrototypeOf2.default)(DOMException)).call(this, message));
 		// Super.
 
 
@@ -1604,7 +1631,7 @@ var DOMException = function (_Error) {
 		Object.defineProperty(_this8, 'name', { value: name });
 
 		// Lock it down.
-		Object.freeze(_this8);
+		(0, _freeze2.default)(_this8);
 		return _this8;
 	}
 
