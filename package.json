@@ -4,15 +4,19 @@
 	"version": "1.0.4",
 	"license": "0BSD",
 	"author": "Dave Houlbrooke <dave@shax.com>",
-	"main": "lib/mock.js",
+	"main": "dist/mock.js",
 	"engineStrict": true,
 	"engines": {
 		"node": ">=6.0.0"
 	},
 	"dependencies": {
-		"shelving-mock-event": "^1.0.8"
+		"babel-runtime": "^6.26.0",
+		"shelving-mock-event": "git://github.com/fbngrmr/shelving-mock-event#chore_transpile_es5"
 	},
 	"devDependencies": {
+		"babel-cli": "^6.26.0",
+		"babel-plugin-transform-runtime": "^6.23.0",
+		"babel-preset-es2015": "^6.24.1",
 		"eslint": "^3.19.0",
 		"jest": "^20.0.3"
 	},
