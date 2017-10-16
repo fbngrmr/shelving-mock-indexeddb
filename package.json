@@ -11,7 +11,7 @@
 	},
 	"dependencies": {
 		"babel-runtime": "^6.26.0",
-		"shelving-mock-event": "git://github.com/fbngrmr/shelving-mock-event#chore_transpile_es5"
+		"shelving-mock-event": "git://github.com/fbngrmr/shelving-mock-event"
 	},
 	"devDependencies": {
 		"babel-cli": "^6.26.0",
