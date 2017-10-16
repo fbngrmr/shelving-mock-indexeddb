@@ -2,66 +2,81 @@
 
 var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
 
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
 require("babel-polyfill");
 
-var _require = require('shelving-mock-event');
-
-const Event = _require.Event,
-      EventTarget = _require.EventTarget;
+var _require = require('shelving-mock-event'),
+    Event = _require.Event,
+    EventTarget = _require.EventTarget;
 
 // Vars.
 
-const connections = {}; // Open connections.
-const versions = {}; // Highest database versions.
-const storage = {}; // Root storage.
+
+var connections = {}; // Open connections.
+var versions = {}; // Highest database versions.
+var storage = {}; // Root storage.
 
 // IndexedDB classes.
 
 // IDBFactory mock.
-class IDBFactory {
-	// Construct.
-	constructor() {
-		// Methods.
-		Object.defineProperty(this, 'open', { value: open });
-		Object.defineProperty(this, 'deleteDatabase', { value: deleteDatabase });
 
-		// Lock it down.
-		Object.freeze(this);
+var IDBFactory =
+// Construct.
+function IDBFactory() {
+	_classCallCheck(this, IDBFactory);
 
-		// Open a connection.
-		function open(name, version) {
-			// Make a new request.
-			// Set default handlers to ensure errors aren't masked by spotty implementations.
-			const request = new IDBOpenDBRequest(name, version);
-			request.onblocked = () => {
-				throw new Error('IDBOpenDBRequest: Open database request was blocked because other connections could not be closed');
-			};
-			return request;
-		}
+	// Methods.
+	Object.defineProperty(this, 'open', { value: open });
+	Object.defineProperty(this, 'deleteDatabase', { value: deleteDatabase });
 
-		// Delete a database.
-		// Internally we regard 'opening a connection to a falsy/zero version' as a delete request.
-		function deleteDatabase(name) {
-			// Make a new request.
-			// Set default handlers to ensure errors aren't masked by spotty implementations.
-			const request = new IDBOpenDBRequest(name, false);
-			request.onblocked = () => {
-				throw new Error('IDBOpenDBRequest: Open database request was blocked because other connections could not be closed');
-			};
-			return request;
-		}
+	// Lock it down.
+	Object.freeze(this);
+
+	// Open a connection.
+	function open(name, version) {
+		// Make a new request.
+		// Set default handlers to ensure errors aren't masked by spotty implementations.
+		var request = new IDBOpenDBRequest(name, version);
+		request.onblocked = function () {
+			throw new Error('IDBOpenDBRequest: Open database request was blocked because other connections could not be closed');
+		};
+		return request;
 	}
-}
+
+	// Delete a database.
+	// Internally we regard 'opening a connection to a falsy/zero version' as a delete request.
+	function deleteDatabase(name) {
+		// Make a new request.
+		// Set default handlers to ensure errors aren't masked by spotty implementations.
+		var request = new IDBOpenDBRequest(name, false);
+		request.onblocked = function () {
+			throw new Error('IDBOpenDBRequest: Open database request was blocked because other connections could not be closed');
+		};
+		return request;
+	}
+};
 
 // Compare two keys.
-Object.defineProperty(IDBFactory, 'cmp', { value: (a, b) => {
+
+
+Object.defineProperty(IDBFactory, 'cmp', { value: function value(a, b) {
 		if (a < b) return -1;else if (a > b) return 1;else return 0;
 	} });
 
 // IDBDatabase database connection mock.
-class IDBDatabase extends EventTarget {
+
+var IDBDatabase = function (_EventTarget) {
+	_inherits(IDBDatabase, _EventTarget);
+
 	// Construct.
-	constructor(dbName, version, data) {
+	function IDBDatabase(dbName, version, data) {
+		_classCallCheck(this, IDBDatabase);
+
 		// Check params.
 		if (!validIdentifier(dbName)) throw new TypeError('IDBDatabase: dbName must be a valid identifier');
 		if (!validVersion(version)) throw new TypeError('IDBDatabase: version must be a valid version');
@@ -74,53 +89,55 @@ class IDBDatabase extends EventTarget {
 		// This usually happens in a different tab/window (i.e. the the user opened a new tab that reloaded the schema from the server and the database now needs an updated schema).
 		// 'versionchange' must close this connection or the connection in the other tab will be blocked (e.g. 'block' will be fired on the IDBOpenDBRequest).
 		// e.g. either call `this.close` or do a `window.location = window.location` to refresh the page.
-		super(null, ['abort', 'error', 'versionchange', 'close']);
-		this.onerror = err => {
+
+		var _this = _possibleConstructorReturn(this, (IDBDatabase.__proto__ || Object.getPrototypeOf(IDBDatabase)).call(this, null, ['abort', 'error', 'versionchange', 'close']));
+
+		_this.onerror = function (err) {
 			throw err;
 		}; // Throw it up by default.
 
 		// Vars.
-		const queue = []; // Secret transaction queue for this database.
-		let closed = false; // closed flag.
-		let closing = false; // closing flag.
-		let active = null; // Active transaction.
-		let timeout = null; // Run timeout.
+		var queue = []; // Secret transaction queue for this database.
+		var closed = false; // closed flag.
+		var closing = false; // closing flag.
+		var active = null; // Active transaction.
+		var timeout = null; // Run timeout.
 
 		// Properties.
-		Object.defineProperty(this, 'name', { value: dbName, enumerable: true });
-		Object.defineProperty(this, 'version', { value: version, enumerable: true });
-		Object.defineProperty(this, 'objectStoreNames', {
+		Object.defineProperty(_this, 'name', { value: dbName, enumerable: true });
+		Object.defineProperty(_this, 'version', { value: version, enumerable: true });
+		Object.defineProperty(_this, 'objectStoreNames', {
 			enumerable: true,
-			get() {
-				const names = Object.keys(data);names.sort();return names;
+			get: function get() {
+				var names = Object.keys(data);names.sort();return names;
 			},
-			set() {
+			set: function set() {
 				throw new Error('IDBDatabase: _data is read only');
 			}
 		});
-		Object.defineProperty(this, '_data', {
-			get() {
+		Object.defineProperty(_this, '_data', {
+			get: function get() {
 				if (closed) throw new Error('IDBDatabase: _data cannot be accessed after connection has closed');return data;
 			},
-			set() {
+			set: function set() {
 				throw new Error('IDBDatabase: _data is read only');
 			}
 		});
 
 		// Methods.
-		Object.defineProperty(this, 'transaction', { value: transaction });
-		Object.defineProperty(this, 'createObjectStore', { value: createObjectStore });
-		Object.defineProperty(this, 'deleteObjectStore', { value: deleteObjectStore });
-		Object.defineProperty(this, 'close', { value: close });
-		Object.defineProperty(this, '_upgradeTransaction', { value: upgradeTransaction }); // Secret _versionTransaction() method.
-		Object.defineProperty(this, '_run', { value: run }); // Secret _run() method.
+		Object.defineProperty(_this, 'transaction', { value: transaction });
+		Object.defineProperty(_this, 'createObjectStore', { value: createObjectStore });
+		Object.defineProperty(_this, 'deleteObjectStore', { value: deleteObjectStore });
+		Object.defineProperty(_this, 'close', { value: close });
+		Object.defineProperty(_this, '_upgradeTransaction', { value: upgradeTransaction }); // Secret _versionTransaction() method.
+		Object.defineProperty(_this, '_run', { value: run }); // Secret _run() method.
 
 		// Lock it down.
-		Object.freeze(this);
+		Object.freeze(_this);
 
 		// Add this to list of open connections.
 		if (!connections[dbName]) connections[dbName] = [];
-		connections[dbName].push(this);
+		connections[dbName].push(_this);
 
 		// Create a transaction on this database that accesses one or more stores.
 		function transaction(storeNames, mode) {
@@ -128,8 +145,9 @@ class IDBDatabase extends EventTarget {
 			if (typeof storeNames === 'string') storeNames = [storeNames];
 			if (!(storeNames instanceof Array)) throw new TypeError('IDBDatabase.transaction(): storeNames must be string or array');
 			if (!storeNames.length) throw new TypeError('IDBDatabase.transaction(): storeNames cannot be empty');
-			for (let i = 0; i < storeNames.length; i++) if (!validIdentifier(storeNames[i])) throw new TypeError('IDBDatabase.transaction(): storeNames must only include valid identifiers');
-			if (!('length' in storeNames) || !storeNames.length) throw new TypeError('IDBDatabase.transaction(): storeNames must be an identifier or non-empty array of identifiers');
+			for (var i = 0; i < storeNames.length; i++) {
+				if (!validIdentifier(storeNames[i])) throw new TypeError('IDBDatabase.transaction(): storeNames must only include valid identifiers');
+			}if (!('length' in storeNames) || !storeNames.length) throw new TypeError('IDBDatabase.transaction(): storeNames must be an identifier or non-empty array of identifiers');
 			if (mode !== 'readonly' && mode !== 'readwrite') throw new TypeError('IDBDatabase.transaction(): mode must be readwrite or readonly');
 
 			// Check state.
@@ -140,7 +158,7 @@ class IDBDatabase extends EventTarget {
 			if (!timeout) setTimeout(run, 20);
 
 			// Return new transaction.
-			const transaction = new IDBTransaction(this, storeNames, mode);
+			var transaction = new IDBTransaction(this, storeNames, mode);
 			queue.push(transaction);
 			return transaction;
 		}
@@ -153,13 +171,19 @@ class IDBDatabase extends EventTarget {
 			if (queue.length) throw new DOMException('IDBDatabase._upgradeTransaction(): Database connection already has transactions', 'InvalidStateError');
 
 			// Return new transaction.
-			const transaction = new IDBTransaction(this, [], 'versionchange');
+			var transaction = new IDBTransaction(this, [], 'versionchange');
 			queue.push(transaction);
 			return transaction;
 		}
 
 		// Create object store.
-		function createObjectStore(storeName, { keyPath = null, autoIncrement = false } = { keyPath: null, autoIncrement: false }) {
+		function createObjectStore(storeName) {
+			var _ref = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : { keyPath: null, autoIncrement: false },
+			    _ref$keyPath = _ref.keyPath,
+			    keyPath = _ref$keyPath === undefined ? null : _ref$keyPath,
+			    _ref$autoIncrement = _ref.autoIncrement,
+			    autoIncrement = _ref$autoIncrement === undefined ? false : _ref$autoIncrement;
+
 			// Check params.
 			if (!validIdentifier(storeName)) throw new TypeError('IDBDatabase.createObjectStore(): storeName must be valid identifier');
 			if (!validKeyPath(keyPath) && keyPath !== null) throw new TypeError('IDBDatabase.createObjectStore(): keyPath must be a valid keyPath or null');
@@ -172,7 +196,7 @@ class IDBDatabase extends EventTarget {
 			if (active._data[storeName]) throw new DOMException('IDBDatabase.createObjectStore(): Object store \'' + storeName + '\' already exists', 'ConstraintError');
 
 			// Create a plain data template for this object store.
-			active._data[storeName] = { records: new Map(), indexes: {}, key: 0, keyPath, autoIncrement };
+			active._data[storeName] = { records: new Map(), indexes: {}, key: 0, keyPath: keyPath, autoIncrement: autoIncrement };
 
 			// Make and return the new IDBObjectStore.
 			return new IDBObjectStore(active, storeName);
@@ -196,6 +220,8 @@ class IDBDatabase extends EventTarget {
 		// Close the connection to this database.
 		// This will block any more transactions from being opened.
 		function close() {
+			var _this2 = this;
+
 			// Check state.
 			if (closed) throw new DOMException('IDBDatabase.close(): Database connection is closed', 'InvalidStateError');
 			if (closing) return; // Already closing.
@@ -211,7 +237,9 @@ class IDBDatabase extends EventTarget {
 			closed = true;
 
 			// Remove this connection from connections list.
-			connections[dbName] = connections[dbName].filter(connection => connection !== this);
+			connections[dbName] = connections[dbName].filter(function (connection) {
+				return connection !== _this2;
+			});
 
 			// Event.
 			this.dispatchEvent(new Event('close', { bubbles: true }));
@@ -234,70 +262,83 @@ class IDBDatabase extends EventTarget {
 				active = null;
 			}
 		}
+		return _this;
 	}
-}
+
+	return IDBDatabase;
+}(EventTarget);
 
 // IDBTransaction mock.
-class IDBTransaction extends EventTarget {
+
+
+var IDBTransaction = function (_EventTarget2) {
+	_inherits(IDBTransaction, _EventTarget2);
+
 	// Construct.
-	constructor(db, storeNames, mode = 'readonly') {
+	function IDBTransaction(db, storeNames) {
+		var mode = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'readonly';
+
+		_classCallCheck(this, IDBTransaction);
+
 		// Check params.
 		if (!(db instanceof IDBDatabase)) throw new TypeError('IDBTransaction: db must be an IDBDatabase');
 		if (!(storeNames instanceof Array)) throw new TypeError('IDBTransaction: storeNames must be array');
-		for (let i = 0; i < storeNames.length; i++) if (!validIdentifier(storeNames[i])) throw new TypeError('IDBTransaction: storeNames must only include valid identifiers');
-		if (mode !== 'readonly' && mode !== 'readwrite' && mode !== 'versionchange') throw new TypeError('IDBTransaction: mode must be readwrite, readonly, or versionchange');
+		for (var i = 0; i < storeNames.length; i++) {
+			if (!validIdentifier(storeNames[i])) throw new TypeError('IDBTransaction: storeNames must only include valid identifiers');
+		}if (mode !== 'readonly' && mode !== 'readwrite' && mode !== 'versionchange') throw new TypeError('IDBTransaction: mode must be readwrite, readonly, or versionchange');
 
 		// Vars.
-		const stores = {}; // List of instantiated IDBObjectStore instances that have been initialised for this transaction.
-		const queue = []; // Secret requests queue for this transaction.
-		let data = db._data; // Database data.
-		let finished = false; // Whether this transaction is finished or not (can have requests made on it).
-		let active = null; // The active request on this transaction.
-		let aborted = false; // Whether this transaction has been aborted.
+		var stores = {}; // List of instantiated IDBObjectStore instances that have been initialised for this transaction.
+		var queue = []; // Secret requests queue for this transaction.
+		var data = db._data; // Database data.
+		var finished = false; // Whether this transaction is finished or not (can have requests made on it).
+		var active = null; // The active request on this transaction.
+		var aborted = false; // Whether this transaction has been aborted.
 
 		// EventTarget.
-		super(db, ['complete', 'error', 'abort']);
 
 		// Freeze store names.
+		var _this3 = _possibleConstructorReturn(this, (IDBTransaction.__proto__ || Object.getPrototypeOf(IDBTransaction)).call(this, db, ['complete', 'error', 'abort']));
+
 		Object.freeze(storeNames);
 
 		// Properties.
-		Object.defineProperty(this, 'db', { value: db, enumerable: true });
-		Object.defineProperty(this, 'mode', { value: mode, enumerable: true });
-		Object.defineProperty(this, 'objectStoreNames', { value: storeNames, enumerable: true });
-		Object.defineProperty(this, 'error', {
-			get() {
+		Object.defineProperty(_this3, 'db', { value: db, enumerable: true });
+		Object.defineProperty(_this3, 'mode', { value: mode, enumerable: true });
+		Object.defineProperty(_this3, 'objectStoreNames', { value: storeNames, enumerable: true });
+		Object.defineProperty(_this3, 'error', {
+			get: function get() {
 				if (!finished) throw new Error('IDBTransaction: error can only be accessed after transaction has finished');return null;
 			},
-			set() {
+			set: function set() {
 				throw new Error('IDBTransaction: error is read only');
 			}
 		});
-		Object.defineProperty(this, '_finished', {
-			get() {
+		Object.defineProperty(_this3, '_finished', {
+			get: function get() {
 				return finished;
 			},
-			set() {
+			set: function set() {
 				throw new Error('IDBTransaction: _finished is read only');
 			}
 		});
-		Object.defineProperty(this, '_data', {
-			get() {
+		Object.defineProperty(_this3, '_data', {
+			get: function get() {
 				if (finished) throw new Error('IDBTransaction: _data cannot be accessed after transaction has finished');return data;
 			},
-			set() {
+			set: function set() {
 				throw new Error('IDBTransaction: _data is read only');
 			}
 		});
 
 		// Methods.
-		Object.defineProperty(this, 'objectStore', { value: objectStore });
-		Object.defineProperty(this, 'abort', { value: abort });
-		Object.defineProperty(this, '_request', { value: request }); // Secret _request() method.
-		Object.defineProperty(this, '_run', { value: run }); // Secret _run() method.
+		Object.defineProperty(_this3, 'objectStore', { value: objectStore });
+		Object.defineProperty(_this3, 'abort', { value: abort });
+		Object.defineProperty(_this3, '_request', { value: request }); // Secret _request() method.
+		Object.defineProperty(_this3, '_run', { value: run }); // Secret _run() method.
 
 		// Lock it down.
-		Object.freeze(this);
+		Object.freeze(_this3);
 
 		// Get object store.
 		function objectStore(storeName) {
@@ -338,9 +379,9 @@ class IDBTransaction extends EventTarget {
 				return input;
 			} else {
 				// Create request, add to queue, and return it.
-				const request = new IDBRequest(input, callback);
-				queue.push(request);
-				return request;
+				var _request = new IDBRequest(input, callback);
+				queue.push(_request);
+				return _request;
 			}
 		}
 
@@ -351,9 +392,9 @@ class IDBTransaction extends EventTarget {
 			if (active) throw new DOMException('IDBTransaction._run(): Transaction is currently running', 'InvalidStateError');
 
 			// Make a clone of data.
-			const original = data;
+			var original = data;
 			data = {};
-			for (const store in original) {
+			for (var store in original) {
 				// This is fussy because we need to clone the records Map manually.
 				// clone() borks at any non-JSON values.
 				data[store] = Object.assign({}, original[store], {
@@ -376,29 +417,40 @@ class IDBTransaction extends EventTarget {
 			// Was it aborted?
 			if (aborted) {
 				// Abort any pending queue.
-				while (queue.length) queue.shift()._abort();
-
-				// 'abort' event.
+				while (queue.length) {
+					queue.shift()._abort();
+				} // 'abort' event.
 				// This is a 'non-erroring' abort, i.e. 'error' isn't set.
 				this.dispatchEvent(new Event('abort', { bubbles: true, cancelable: false }));
 			} else {
 				// Commit the changes back into the database.
-				for (const store in original) delete original[store];
-				for (const store in data) original[store] = data[store];
-
-				// 'complete' event.
+				for (var _store in original) {
+					delete original[_store];
+				}for (var _store2 in data) {
+					original[_store2] = data[_store2];
+				} // 'complete' event.
 				this.dispatchEvent(new Event('complete', { bubbles: false, cancelable: false }));
 			}
 		}
+		return _this3;
 	}
-}
+
+	return IDBTransaction;
+}(EventTarget);
 
 // IDBRequest mock.
-class IDBRequest extends EventTarget {
+
+
+var IDBRequest = function (_EventTarget3) {
+	_inherits(IDBRequest, _EventTarget3);
+
 	// Construct.
-	constructor(input, callback) {
+	function IDBRequest(input, callback) {
+		_classCallCheck(this, IDBRequest);
+
 		// Check params.
-		let transaction, source;
+		var transaction = void 0,
+		    source = void 0;
 		if (input instanceof IDBTransaction) {
 			transaction = input;
 			source = null;
@@ -413,51 +465,52 @@ class IDBRequest extends EventTarget {
 		if (typeof callback !== 'function') throw new TypeError('IDBRequest: callback must be a function');
 
 		// Vars.
-		let result = undefined; // The result, if any, that this request generated.
-		let active = true; // Whether request is still active (pending) or complete (done).
-		let error = undefined; // Error, if any, on this request. Used when request is aborted.
+		var result = undefined; // The result, if any, that this request generated.
+		var active = true; // Whether request is still active (pending) or complete (done).
+		var error = undefined; // Error, if any, on this request. Used when request is aborted.
 
 		// EventTarget.
-		super(transaction, ['success', 'error']);
 
 		// Properties.
-		Object.defineProperty(this, 'transaction', { value: transaction, enumerable: true });
-		Object.defineProperty(this, 'source', { value: source, enumerable: true });
-		Object.defineProperty(this, 'readyState', {
+		var _this4 = _possibleConstructorReturn(this, (IDBRequest.__proto__ || Object.getPrototypeOf(IDBRequest)).call(this, transaction, ['success', 'error']));
+
+		Object.defineProperty(_this4, 'transaction', { value: transaction, enumerable: true });
+		Object.defineProperty(_this4, 'source', { value: source, enumerable: true });
+		Object.defineProperty(_this4, 'readyState', {
 			enumerable: true,
-			get() {
+			get: function get() {
 				return active ? 'pending' : 'done';
 			},
-			set() {
+			set: function set() {
 				throw new Error('IDBRequest: readyState is read only');
 			}
 		});
-		Object.defineProperty(this, 'result', {
+		Object.defineProperty(_this4, 'result', {
 			enumerable: true,
-			get() {
+			get: function get() {
 				if (active) throw new DOMException('IDBRequest: Cannot get result until request is done', 'InvalidStateError');return result;
 			},
-			set() {
+			set: function set() {
 				throw new Error('IDBRequest: result is read only');
 			}
 		});
-		Object.defineProperty(this, 'error', {
+		Object.defineProperty(_this4, 'error', {
 			enumerable: true,
-			get() {
+			get: function get() {
 				if (active) throw new DOMException('IDBRequest: Cannot get error until request is done', 'InvalidStateError');return error;
 			},
-			set() {
+			set: function set() {
 				throw new Error('IDBRequest: error is read only');
 			}
 		});
 
 		// Methods.
-		Object.defineProperty(this, '_run', { value: run }); // Secret _run() method.
-		Object.defineProperty(this, '_rerun', { value: rerun }); // Secret _rerun() method.
-		Object.defineProperty(this, '_abort', { value: abort }); // Secret _abort() method.
+		Object.defineProperty(_this4, '_run', { value: run }); // Secret _run() method.
+		Object.defineProperty(_this4, '_rerun', { value: rerun }); // Secret _rerun() method.
+		Object.defineProperty(_this4, '_abort', { value: abort }); // Secret _abort() method.
 
 		// Lock it down.
-		Object.freeze(this);
+		Object.freeze(_this4);
 
 		// Run this request.
 		function run() {
@@ -489,62 +542,73 @@ class IDBRequest extends EventTarget {
 			// Event.
 			this.dispatchEvent(new Event('error', { bubbles: true, cancelable: true }));
 		}
+		return _this4;
 	}
-}
+
+	return IDBRequest;
+}(EventTarget);
 
 // IDBOpenDBRequest mock.
-class IDBOpenDBRequest extends EventTarget {
+
+
+var IDBOpenDBRequest = function (_EventTarget4) {
+	_inherits(IDBOpenDBRequest, _EventTarget4);
+
 	// Construct.
-	constructor(dbName, version) {
+	function IDBOpenDBRequest(dbName, version) {
+		var _this5;
+
+		_classCallCheck(this, IDBOpenDBRequest);
+
 		// Checks.
 		if (!validIdentifier(dbName)) throw new TypeError('IDBOpenDBRequest: dbName must be valid identifier');
 		if (!validVersion(version) && version !== false) throw new TypeError('IDBOpenDBRequest: version must be a valid version or false');
 
 		// Vars.
-		let result = undefined; // The result, if any, that this request generated.
-		let active = true; // Whether request is still active (pending) or complete (done).
-		let transaction = null; // Transaction under this request.
+		var result = undefined; // The result, if any, that this request generated.
+		var active = true; // Whether request is still active (pending) or complete (done).
+		var transaction = null; // Transaction under this request.
 
 		// EventTarget.
-		const request = super(null, ['success', 'error', 'blocked', 'upgradeneeded']);
+		var request = (_this5 = _possibleConstructorReturn(this, (IDBOpenDBRequest.__proto__ || Object.getPrototypeOf(IDBOpenDBRequest)).call(this, null, ['success', 'error', 'blocked', 'upgradeneeded'])), _this5);
 
 		// Properties.
-		Object.defineProperty(this, 'transaction', {
-			get() {
+		Object.defineProperty(_this5, 'transaction', {
+			get: function get() {
 				return transaction;
 			},
-			set() {
+			set: function set() {
 				throw new Error('IDBRequest: transaction is read only');
 			}
 		});
-		Object.defineProperty(this, 'source', { value: null });
-		Object.defineProperty(this, 'readyState', {
-			get() {
+		Object.defineProperty(_this5, 'source', { value: null });
+		Object.defineProperty(_this5, 'readyState', {
+			get: function get() {
 				return active ? 'pending' : 'done';
 			},
-			set() {
+			set: function set() {
 				throw new Error('IDBRequest: readyState is read only');
 			}
 		});
-		Object.defineProperty(this, 'result', {
-			get() {
+		Object.defineProperty(_this5, 'result', {
+			get: function get() {
 				if (active) throw new DOMException('IDBRequest: Cannot get result until request is done', 'InvalidStateError');return result;
 			},
-			set() {
+			set: function set() {
 				throw new Error('IDBRequest: result is read only');
 			}
 		});
-		Object.defineProperty(this, 'error', {
-			get() {
+		Object.defineProperty(_this5, 'error', {
+			get: function get() {
 				if (active) throw new DOMException('IDBRequest: Cannot get error until request is done', 'InvalidStateError');return null;
 			},
-			set() {
+			set: function set() {
 				throw new Error('IDBRequest: error is read only');
 			}
 		});
 
 		// Lock it down.
-		Object.freeze(this);
+		Object.freeze(_this5);
 
 		// Open requests automatically run.
 		// Allow 20ms — enough time for user to attach handlers etc.
@@ -553,7 +617,7 @@ class IDBOpenDBRequest extends EventTarget {
 		// Run this request.
 		function run() {
 			// Vars.
-			const oldVersion = versions[dbName] || 0;
+			var oldVersion = versions[dbName] || 0;
 
 			// Check state.
 			if (!active) throw new DOMException('IDBOpenDBRequest._run(): Request has already been run', 'InvalidStateError');
@@ -589,11 +653,11 @@ class IDBOpenDBRequest extends EventTarget {
 				if (!close()) return;
 
 				// Make a database.
-				const db = new IDBDatabase(dbName, version, {}); // New database.
-				const tx = db._upgradeTransaction(); // 'versionchange' transaction.
+				var db = new IDBDatabase(dbName, version, {}); // New database.
+				var tx = db._upgradeTransaction(); // 'versionchange' transaction.
 
 				// Add a temp/wrapper request on the transaction.
-				tx._request(tx, () => {
+				tx._request(tx, function () {
 
 					// Result is DB.
 					result = db;
@@ -622,7 +686,9 @@ class IDBOpenDBRequest extends EventTarget {
 			if (connections[dbName] && connections[dbName].length) {
 				// Close other connections (dispatch 'versionchange' on each).
 				// If connections are still open, block this open request.
-				connections[dbName].forEach(connection => connection.dispatchEvent(new Event('versionchange', { bubbles: false, cancelable: false })));
+				connections[dbName].forEach(function (connection) {
+					return connection.dispatchEvent(new Event('versionchange', { bubbles: false, cancelable: false }));
+				});
 
 				// Fail if connections are still open.
 				if (connections[dbName].length) {
@@ -637,753 +703,808 @@ class IDBOpenDBRequest extends EventTarget {
 			// Win.
 			return true;
 		}
+		return _this5;
 	}
-}
+
+	return IDBOpenDBRequest;
+}(EventTarget);
 
 // IDBObjectStore mock.
-class IDBObjectStore {
-	// Construct.
-	constructor(transaction, storeName) {
+
+
+var IDBObjectStore =
+// Construct.
+function IDBObjectStore(transaction, storeName) {
+	_classCallCheck(this, IDBObjectStore);
+
+	// Check params.
+	if (!(transaction instanceof IDBTransaction)) throw new TypeError('IDBObjectStore: transaction must be a transaction');
+	if (!validIdentifier(storeName)) throw new TypeError('IDBObjectStore: storeName must be valid identifier');
+
+	// Check state.
+	if (transaction._finished) throw new DOMException('IDBObjectStore: Transaction has finished', 'InvalidStateError');
+	if (!transaction._data[storeName]) throw new DOMException('IDBObjectStore: Object store \'' + storeName + '\' does not exist', 'InvalidStateError');
+
+	// Vars.
+	var store = this;
+	var _transaction$_data$st = transaction._data[storeName],
+	    keyPath = _transaction$_data$st.keyPath,
+	    autoIncrement = _transaction$_data$st.autoIncrement;
+
+	// Properties.
+
+	Object.defineProperty(this, 'transaction', { value: transaction, enumerable: true });
+	Object.defineProperty(this, 'name', { value: storeName, enumerable: true }); // @todo In IDB 2.0 name is editable.
+	Object.defineProperty(this, 'keyPath', { value: keyPath, enumerable: true });
+	Object.defineProperty(this, 'autoIncrement', { value: autoIncrement, enumerable: true });
+	Object.defineProperty(this, 'indexNames', {
+		enumerable: true,
+		get: function get() {
+			var names = Object.keys(transaction._data[storeName].indexes);names.sort();return names;
+		},
+		set: function set() {
+			throw new Error('IDBObjectStore: indexNames is read only');
+		}
+	});
+
+	// Methods.
+	Object.defineProperty(this, 'count', { value: count });
+	Object.defineProperty(this, 'get', { value: get });
+	Object.defineProperty(this, 'openCursor', { value: openCursor });
+	Object.defineProperty(this, 'put', { value: put });
+	Object.defineProperty(this, 'add', { value: add });
+	Object.defineProperty(this, 'delete', { value: _delete });
+	Object.defineProperty(this, 'clear', { value: clear });
+	Object.defineProperty(this, 'index', { value: index });
+	Object.defineProperty(this, 'createIndex', { value: createIndex });
+	Object.defineProperty(this, 'deleteIndex', { value: deleteIndex });
+
+	// Lock it down.
+	Object.freeze(this);
+
+	// Count documents.
+	function count() {
+		var key = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : undefined;
+
 		// Check params.
-		if (!(transaction instanceof IDBTransaction)) throw new TypeError('IDBObjectStore: transaction must be a transaction');
-		if (!validIdentifier(storeName)) throw new TypeError('IDBObjectStore: storeName must be valid identifier');
+		if (!validKey(key) && !validKeyRange(key) && key !== undefined) throw new DOMException('count(): The key parameter was provided but does not contain a valid key (number, string, date), key range (IDBKeyRange or array of valid keys), or undefined', 'DataError');
 
 		// Check state.
-		if (transaction._finished) throw new DOMException('IDBObjectStore: Transaction has finished', 'InvalidStateError');
-		if (!transaction._data[storeName]) throw new DOMException('IDBObjectStore: Object store \'' + storeName + '\' does not exist', 'InvalidStateError');
+		if (transaction._finished) throw new DOMException('IDBObjectStore.count(): Transaction has finished', 'InvalidStateError');
 
-		// Vars.
-		const store = this;
-		var _transaction$_data$st = transaction._data[storeName];
-		const keyPath = _transaction$_data$st.keyPath,
-		      autoIncrement = _transaction$_data$st.autoIncrement;
-
-		// Properties.
-
-		Object.defineProperty(this, 'transaction', { value: transaction, enumerable: true });
-		Object.defineProperty(this, 'name', { value: storeName, enumerable: true }); // @todo In IDB 2.0 name is editable.
-		Object.defineProperty(this, 'keyPath', { value: keyPath, enumerable: true });
-		Object.defineProperty(this, 'autoIncrement', { value: autoIncrement, enumerable: true });
-		Object.defineProperty(this, 'indexNames', {
-			enumerable: true,
-			get() {
-				const names = Object.keys(transaction._data[storeName].indexes);names.sort();return names;
-			},
-			set() {
-				throw new Error('IDBObjectStore: indexNames is read only');
-			}
-		});
-
-		// Methods.
-		Object.defineProperty(this, 'count', { value: count });
-		Object.defineProperty(this, 'get', { value: get });
-		Object.defineProperty(this, 'openCursor', { value: openCursor });
-		Object.defineProperty(this, 'put', { value: put });
-		Object.defineProperty(this, 'add', { value: add });
-		Object.defineProperty(this, 'delete', { value: _delete });
-		Object.defineProperty(this, 'clear', { value: clear });
-		Object.defineProperty(this, 'index', { value: index });
-		Object.defineProperty(this, 'createIndex', { value: createIndex });
-		Object.defineProperty(this, 'deleteIndex', { value: deleteIndex });
-
-		// Lock it down.
-		Object.freeze(this);
-
-		// Count documents.
-		function count(key = undefined) {
-			// Check params.
-			if (!validKey(key) && !validKeyRange(key) && key !== undefined) throw new DOMException('count(): The key parameter was provided but does not contain a valid key (number, string, date), key range (IDBKeyRange or array of valid keys), or undefined', 'DataError');
+		// Return an IDBRequest on the transaction returns the count from a cursor.
+		return transaction._request(store, function (request) {
 
 			// Check state.
 			if (transaction._finished) throw new DOMException('IDBObjectStore.count(): Transaction has finished', 'InvalidStateError');
+			if (!transaction._data[storeName]) throw new DOMException('IDBIndex.count(): Object store \'' + storeName + '\' does not exist', 'InvalidStateError');
 
-			// Return an IDBRequest on the transaction returns the count from a cursor.
-			return transaction._request(store, request => {
+			// Return the number of keys found on the cursor.
+			return new IDBCursor(request, key)._count;
+		});
+	}
 
-				// Check state.
-				if (transaction._finished) throw new DOMException('IDBObjectStore.count(): Transaction has finished', 'InvalidStateError');
-				if (!transaction._data[storeName]) throw new DOMException('IDBIndex.count(): Object store \'' + storeName + '\' does not exist', 'InvalidStateError');
+	// Get a single result.
+	// Returns a request that fires a 'success' event when its result is available.
+	// `request.result` will be either:
+	// 1. The value for the first result with a key matching `key`.
+	// 2. `undefined`, if there are no matching results.
+	function get() {
+		var key = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : undefined;
 
-				// Return the number of keys found on the cursor.
-				return new IDBCursor(request, key)._count;
-			});
-		}
+		// Check params.
+		if (!validKey(key) && !validKeyRange(key) && key !== undefined) throw new DOMException('count(): The key parameter was provided but does not contain a valid key (number, string, date), key range (IDBKeyRange or array of valid keys), or undefined', 'DataError');
 
-		// Get a single result.
-		// Returns a request that fires a 'success' event when its result is available.
-		// `request.result` will be either:
-		// 1. The value for the first result with a key matching `key`.
-		// 2. `undefined`, if there are no matching results.
-		function get(key = undefined) {
-			// Check params.
-			if (!validKey(key) && !validKeyRange(key) && key !== undefined) throw new DOMException('count(): The key parameter was provided but does not contain a valid key (number, string, date), key range (IDBKeyRange or array of valid keys), or undefined', 'DataError');
+		// Check state.
+		if (transaction._finished) throw new DOMException('IDBObjectStore.get(): Transaction has finished', 'InvalidStateError');
+
+		// Return an IDBRequest on the transaction.
+		return transaction._request(store, function (request) {
 
 			// Check state.
 			if (transaction._finished) throw new DOMException('IDBObjectStore.get(): Transaction has finished', 'InvalidStateError');
+			if (!transaction._data[storeName]) throw new DOMException('IDBIndex.get(): Object store \'' + storeName + '\' does not exist', 'InvalidStateError');
 
-			// Return an IDBRequest on the transaction.
-			return transaction._request(store, request => {
+			// Return the value of the first key found by the cursor.
+			return new IDBCursorWithValue(request, key).value;
+		});
+	}
 
-				// Check state.
-				if (transaction._finished) throw new DOMException('IDBObjectStore.get(): Transaction has finished', 'InvalidStateError');
-				if (!transaction._data[storeName]) throw new DOMException('IDBIndex.get(): Object store \'' + storeName + '\' does not exist', 'InvalidStateError');
+	// Open a cursor to retrieve several results.
+	// Returns a request that fires one or more 'success' events when its results is available.
+	// Continues to fire 'success' as many times as `cursor.continue()` is called and results are available.
+	// request.result will be either:
+	// 1. An `IDBCursor` (with `cursor.value` and `cursor.key` to read values, and `cursor.continue()` method to continue).
+	// 2. `undefined`, if there are no more results.
+	function openCursor() {
+		var query = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : undefined;
+		var direction = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'next';
 
-				// Return the value of the first key found by the cursor.
-				return new IDBCursorWithValue(request, key).value;
-			});
-		}
+		// Check params.
+		if (!validKey(query) && !validKeyRange(query) && query !== undefined) throw new DOMException('count(): The query parameter not contain a valid key (number, string, date), key range (IDBKeyRange or array of valid keys), or undefined', 'DataError');
+		if (direction !== 'next' && direction !== 'prev') throw new TypeError('IDBCursor: direction must be one of \'next\' or \'prev\' (\'nextunique\' or \'prevunique\' are not relevant for primary keys, which must be unique)');
 
-		// Open a cursor to retrieve several results.
-		// Returns a request that fires one or more 'success' events when its results is available.
-		// Continues to fire 'success' as many times as `cursor.continue()` is called and results are available.
-		// request.result will be either:
-		// 1. An `IDBCursor` (with `cursor.value` and `cursor.key` to read values, and `cursor.continue()` method to continue).
-		// 2. `undefined`, if there are no more results.
-		function openCursor(query = undefined, direction = 'next') {
-			// Check params.
-			if (!validKey(query) && !validKeyRange(query) && query !== undefined) throw new DOMException('count(): The query parameter not contain a valid key (number, string, date), key range (IDBKeyRange or array of valid keys), or undefined', 'DataError');
-			if (direction !== 'next' && direction !== 'prev') throw new TypeError('IDBCursor: direction must be one of \'next\' or \'prev\' (\'nextunique\' or \'prevunique\' are not relevant for primary keys, which must be unique)');
+		// Check state.
+		if (transaction._finished) throw new DOMException('IDBObjectStore.openCursor(): Transaction has finished', 'InvalidStateError');
+
+		// Return an IDBRequest.
+		// The result of the request is an IDBCursor (if there's a value at the current cursor position),
+		// or undefined (if there isn't, because we iterated past the end or there were no results).
+		var cursor = void 0;
+		return transaction._request(store, function (request) {
 
 			// Check state.
 			if (transaction._finished) throw new DOMException('IDBObjectStore.openCursor(): Transaction has finished', 'InvalidStateError');
+			if (!transaction._data[storeName]) throw new DOMException('IDBIndex.openCursor(): Object store \'' + storeName + '\' does not exist', 'InvalidStateError');
 
-			// Return an IDBRequest.
-			// The result of the request is an IDBCursor (if there's a value at the current cursor position),
-			// or undefined (if there isn't, because we iterated past the end or there were no results).
-			let cursor;
-			return transaction._request(store, request => {
+			// Make a cursor if it doesn't exist.
+			// Don't create the cursor until the request is run.
+			// (Otherwise records added by other requests between this request being created and it being run, won't be included.)
+			if (!cursor) cursor = new IDBCursorWithValue(request, query, direction);
 
-				// Check state.
-				if (transaction._finished) throw new DOMException('IDBObjectStore.openCursor(): Transaction has finished', 'InvalidStateError');
-				if (!transaction._data[storeName]) throw new DOMException('IDBIndex.openCursor(): Object store \'' + storeName + '\' does not exist', 'InvalidStateError');
+			// Return cursor if there is a value.
+			return cursor.primaryKey !== undefined ? cursor : undefined;
+		});
+	}
 
-				// Make a cursor if it doesn't exist.
-				// Don't create the cursor until the request is run.
-				// (Otherwise records added by other requests between this request being created and it being run, won't be included.)
-				if (!cursor) cursor = new IDBCursorWithValue(request, query, direction);
-
-				// Return cursor if there is a value.
-				return cursor.primaryKey !== undefined ? cursor : undefined;
-			});
+	// Save a document to a specified key.
+	// Returns a request that fires 'success' event when `value` has been saved under `key`.
+	function put(value, key) {
+		// Check params.
+		if (!(value instanceof Object)) throw new DOMException('IDBObjectStore.put(): value must be an object', 'DataError');
+		if (keyPath) {
+			// Checks for in-line keys (key at value.keyPath).
+			// key parameter must not be set.
+			if (key !== undefined) throw new DOMException('IDBObjectStore.put(): key parameter cannot be set (use value.' + keyPath + ' instead)', 'DataError');
+			key = value[keyPath];
+			if (key !== undefined && !validKey(key)) throw new DOMException('IDBObjectStore.put(): inline key (value.' + keyPath + ') must be a valid key (number, string, date)', 'DataError');
+			if (key === undefined && !autoIncrement) throw new DOMException('IDBObjectStore.put(): inline key (value.' + keyPath + ') must be set (object store does not autoincrement)', 'DataError');
+		} else {
+			// Checks for out-of-line keys (key parameter).
+			if (key !== undefined && !validKey(key)) throw new DOMException('IDBObjectStore.put(): key parameter must be valid key (number, string, date)', 'DataError');
+			if (key === undefined && !autoIncrement) throw new DOMException('IDBObjectStore.put(): key parameter must be set (object store does not autoincrement)', 'DataError');
 		}
 
-		// Save a document to a specified key.
-		// Returns a request that fires 'success' event when `value` has been saved under `key`.
-		function put(value, key) {
-			// Check params.
-			if (!(value instanceof Object)) throw new DOMException('IDBObjectStore.put(): value must be an object', 'DataError');
-			if (keyPath) {
-				// Checks for in-line keys (key at value.keyPath).
-				// key parameter must not be set.
-				if (key !== undefined) throw new DOMException('IDBObjectStore.put(): key parameter cannot be set (use value.' + keyPath + ' instead)', 'DataError');
-				key = value[keyPath];
-				if (key !== undefined && !validKey(key)) throw new DOMException('IDBObjectStore.put(): inline key (value.' + keyPath + ') must be a valid key (number, string, date)', 'DataError');
-				if (key === undefined && !autoIncrement) throw new DOMException('IDBObjectStore.put(): inline key (value.' + keyPath + ') must be set (object store does not autoincrement)', 'DataError');
-			} else {
-				// Checks for out-of-line keys (key parameter).
-				if (key !== undefined && !validKey(key)) throw new DOMException('IDBObjectStore.put(): key parameter must be valid key (number, string, date)', 'DataError');
-				if (key === undefined && !autoIncrement) throw new DOMException('IDBObjectStore.put(): key parameter must be set (object store does not autoincrement)', 'DataError');
-			}
+		// Check state.
+		if (transaction._finished) throw new DOMException('IDBObjectStore.put(): Transaction has finished', 'InvalidStateError');
+		if (transaction.mode === 'readonly') throw new DOMException('IDBObjectStore.put(): Transaction is read only', 'ReadOnlyError');
+
+		// Clone.
+		try {
+			value = clone(value);
+		} catch (err) {
+			throw new DOMException('IDBObjectStore.put(): value must be JSON-friendly value (string, finite number, null, true, false, plain array, plain object)', 'DataCloneError');
+		}
+
+		// Return an IDBRequest on the transaction that saves the value at the key.
+		return transaction._request(store, function () {
 
 			// Check state.
 			if (transaction._finished) throw new DOMException('IDBObjectStore.put(): Transaction has finished', 'InvalidStateError');
-			if (transaction.mode === 'readonly') throw new DOMException('IDBObjectStore.put(): Transaction is read only', 'ReadOnlyError');
+			if (!transaction._data[storeName]) throw new DOMException('IDBObjectStore.put(): Object store \'' + storeName + '\' does not exist', 'InvalidStateError');
 
-			// Clone.
-			try {
-				value = clone(value);
-			} catch (err) {
-				throw new DOMException('IDBObjectStore.put(): value must be JSON-friendly value (string, finite number, null, true, false, plain array, plain object)', 'DataCloneError');
+			// Generate a key if it's not set.
+			if (key === undefined) {
+				// Generate a key.
+				transaction._data[storeName].key++;
+				key = transaction._data[storeName].key;
+
+				// Set key on value if keyPath is set.
+				if (keyPath) value[keyPath] = key;
 			}
 
-			// Return an IDBRequest on the transaction that saves the value at the key.
-			return transaction._request(store, () => {
-
-				// Check state.
-				if (transaction._finished) throw new DOMException('IDBObjectStore.put(): Transaction has finished', 'InvalidStateError');
-				if (!transaction._data[storeName]) throw new DOMException('IDBObjectStore.put(): Object store \'' + storeName + '\' does not exist', 'InvalidStateError');
-
-				// Generate a key if it's not set.
-				if (key === undefined) {
-					// Generate a key.
-					transaction._data[storeName].key++;
-					key = transaction._data[storeName].key;
-
-					// Set key on value if keyPath is set.
-					if (keyPath) value[keyPath] = key;
-				}
-
-				// Save the value.
-				const records = transaction._data[storeName].records;
-				records.set(key, value);
-			});
-		}
-
-		// Alias for put()
-		function add(value, key) {
-			return store.put(value, key);
-		}
-
-		// Delete a record by key.
-		function _delete(range) {
-			// Check params.
-			if (!validKey(range) && !validKeyRange(range)) throw new DOMException('IDBObjectStore.delete(): The range parameter was provided but does not contain a valid key (number, string, date) or key range (IDBKeyRange or array of valid keys)', 'DataError');
-
-			// Check state.
-			if (transaction.mode === 'readonly') throw new DOMException('IDBObjectStore.delete(): Transaction is read only', 'ReadOnlyError');
-			if (transaction._finished) throw new DOMException('IDBObjectStore.delete(): Transaction has finished', 'InvalidStateError');
-
-			// Return an IDBRequest on the transaction that deletes values in the range.
-			return transaction._request(store, () => {
-
-				// Check state.
-				if (transaction._finished) throw new DOMException('IDBObjectStore.delete(): Transaction has finished', 'InvalidStateError');
-				if (!transaction._data[storeName]) throw new DOMException('IDBObjectStore.delete(): Object store \'' + storeName + '\' does not exist', 'InvalidStateError');
-
-				// Delete matching keys in records.
-				const records = transaction._data[storeName].records;
-				var _iteratorNormalCompletion = true;
-				var _didIteratorError = false;
-				var _iteratorError = undefined;
-
-				try {
-					for (var _iterator = records[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-						const _ref = _step.value;
-
-						var _ref2 = _slicedToArray(_ref, 1);
-
-						const primary = _ref2[0];
-						if (keyInRange(primary, range)) records.delete(primary);
-					}
-				} catch (err) {
-					_didIteratorError = true;
-					_iteratorError = err;
-				} finally {
-					try {
-						if (!_iteratorNormalCompletion && _iterator.return) {
-							_iterator.return();
-						}
-					} finally {
-						if (_didIteratorError) {
-							throw _iteratorError;
-						}
-					}
-				}
-			});
-		}
-
-		// Clear all documents.
-		function clear() {
-			// Check state.
-			if (transaction._finished) throw new DOMException('IDBObjectStore.clear(): Transaction has finished', 'InvalidStateError');
-
-			// Return an IDBRequest on the transaction that deletes everything in the store.
-			return transaction._request(store, () => {
-
-				// Check state.
-				if (transaction._finished) throw new DOMException('IDBObjectStore.clear(): Transaction has finished', 'InvalidStateError');
-				if (!transaction._data[storeName]) throw new DOMException('IDBObjectStore.clear(): Object store \'' + storeName + '\' does not exist', 'InvalidStateError');
-
-				// Clear all records.
-				transaction._data[storeName].records.clear();
-			});
-		}
-
-		// Get an existing index.
-		function index(indexName) {
-			// Check params.
-			if (!validIdentifier(indexName)) throw new TypeError('IDBObjectStore.index(): indexName must be a valid identifier');
-
-			// Check state.
-			if (transaction._finished) throw new DOMException('IDBObjectStore.index(): Transaction has finished', 'InvalidStateError');
-			if (!transaction._data[storeName]) throw new DOMException('IDBObjectStore.index(): Object store \'' + storeName + '\' does not exist', 'InvalidStateError');
-			if (!transaction._data[storeName].indexes[indexName]) throw new DOMException('IDBObjectStore.index(): Index \'' + indexName + '\' does not exist', 'InvalidStateError');
-
-			// Return the existing index.
-			return new IDBIndex(store, indexName);
-		}
-
-		// Create an index on this object store.
-		function createIndex(indexName, keyPath, { unique = false, multiEntry = false } = { unique: false, multiEntry: false }) {
-			// Check params.
-			if (!validIdentifier(indexName)) throw new TypeError('IDBObjectStore.createIndex(): indexName must be a valid identifier');
-			if (!validKeyPath(keyPath) && !validMultiKeyPath(keyPath)) throw new TypeError('IDBObjectStore.createIndex(): keyPath must be a valid key path (\'a\' or \'a.b\') or array of valid key paths');
-			if (typeof unique !== 'boolean') throw new TypeError('IDBObjectStore.createIndex(): unique must be boolean');
-			if (typeof multiEntry !== 'boolean') throw new TypeError('IDBObjectStore.createIndex(): multiEntry must be boolean');
-
-			// Block array keys.
-			if (validMultiKeyPath(keyPath)) throw new TypeError('IDBObjectStore.createIndex(): array keyPaths are not yet supported by this mock'); // @todo add support for array keyPaths.
-
-			// Check state.
-			if (transaction._finished) throw new DOMException('IDBObjectStore.createIndex(): Transaction has finished', 'InvalidStateError');
-			if (transaction.mode !== 'versionchange') throw new DOMException('IDBObjectStore.createIndex(): Can only be used used within an active \'versionchange\' transaction, not \'' + transaction.mode + '\'', 'InvalidStateError');
-			if (!transaction._data[storeName]) throw new DOMException('IDBObjectStore.createIndex(): Object store \'' + storeName + '\' does not exist', 'InvalidStateError');
-			if (transaction._data[storeName].indexes[indexName]) throw new DOMException('IDBObjectStore.createIndex(): Index already exists', 'ConstraintError');
-
-			// Create a plain data template for this index.
-			transaction._data[storeName].indexes[indexName] = { keyPath: keyPath, unique: unique, multiEntry: multiEntry };
-
-			// Return a new IDBIndex.
-			return new IDBIndex(store, indexName);
-		}
-
-		// Delete an index on this object store.
-		function deleteIndex(indexName) {
-			// Check params.
-			if (!validIdentifier(indexName)) throw new TypeError('IDBObjectStore.deleteIndex(): indexName must be a valid identifier');
-
-			// Check state.
-			if (transaction._finished) throw new DOMException('IDBObjectStore.deleteIndex(): Transaction has finished', 'InvalidStateError');
-			if (transaction.mode !== 'versionchange') throw new DOMException('IDBObjectStore.deleteIndex(): Can only be used used within an active \'versionchange\' transaction, not \'' + transaction.mode + '\'', 'InvalidStateError');
-			if (!transaction._data[storeName]) throw new DOMException('IDBObjectStore.deleteIndex(): Object store \'' + storeName + '\' does not exist', 'InvalidStateError');
-			if (!transaction._data[storeName].indexes[indexName]) throw new DOMException('IDBObjectStore.deleteIndex(): Index \'' + indexName + '\' does not exist', 'NotFoundError');
-
-			// Delete the index.
-			delete transaction._data[storeName].indexes[indexName];
-		}
+			// Save the value.
+			var records = transaction._data[storeName].records;
+			records.set(key, value);
+		});
 	}
-}
 
-// IDBIndex mock.
-class IDBIndex {
-	// Construct.
-	constructor(store, indexName) {
+	// Alias for put()
+	function add(value, key) {
+		return store.put(value, key);
+	}
+
+	// Delete a record by key.
+	function _delete(range) {
 		// Check params.
-		if (!(store instanceof IDBObjectStore)) throw new TypeError('IDBIndex: store must be an IDBObjectStore');
-		if (!validIdentifier(indexName)) throw new TypeError('IDBIndex: indexName must be a valid identifier');
-
-		// Vars.
-		const index = this;
-		const storeName = store.name;
-		const transaction = store.transaction;
+		if (!validKey(range) && !validKeyRange(range)) throw new DOMException('IDBObjectStore.delete(): The range parameter was provided but does not contain a valid key (number, string, date) or key range (IDBKeyRange or array of valid keys)', 'DataError');
 
 		// Check state.
-		if (!transaction._data[storeName]) throw new DOMException('IDBIndex: Object store \'' + storeName + '\' does not exist', 'InvalidStateError');
-		if (!transaction._data[storeName].indexes[indexName]) throw new DOMException('IDBIndex: Index \'' + indexName + '\' does not exist', 'InvalidStateError');
+		if (transaction.mode === 'readonly') throw new DOMException('IDBObjectStore.delete(): Transaction is read only', 'ReadOnlyError');
+		if (transaction._finished) throw new DOMException('IDBObjectStore.delete(): Transaction has finished', 'InvalidStateError');
 
-		// Vars.
-		var _transaction$_data$st2 = transaction._data[storeName].indexes[indexName];
-		const keyPath = _transaction$_data$st2.keyPath,
-		      unique = _transaction$_data$st2.unique,
-		      multiEntry = _transaction$_data$st2.multiEntry;
+		// Return an IDBRequest on the transaction that deletes values in the range.
+		return transaction._request(store, function () {
 
-		// Properties.
+			// Check state.
+			if (transaction._finished) throw new DOMException('IDBObjectStore.delete(): Transaction has finished', 'InvalidStateError');
+			if (!transaction._data[storeName]) throw new DOMException('IDBObjectStore.delete(): Object store \'' + storeName + '\' does not exist', 'InvalidStateError');
 
-		Object.defineProperty(this, 'objectStore', { value: store, enumerable: true });
-		Object.defineProperty(this, 'name', { value: indexName, enumerable: true });
-		Object.defineProperty(this, 'keyPath', { value: keyPath, enumerable: true });
-		Object.defineProperty(this, 'multiEntry', { value: multiEntry, enumerable: true });
-		Object.defineProperty(this, 'unique', { value: unique, enumerable: true });
+			// Delete matching keys in records.
+			var records = transaction._data[storeName].records;
+			var _iteratorNormalCompletion = true;
+			var _didIteratorError = false;
+			var _iteratorError = undefined;
 
-		// Methods.
-		Object.defineProperty(this, 'count', { value: count });
-		Object.defineProperty(this, 'get', { value: get });
-		Object.defineProperty(this, 'openCursor', { value: openCursor });
+			try {
+				for (var _iterator = records[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+					var _step$value = _slicedToArray(_step.value, 1),
+					    primary = _step$value[0];
 
-		// Lock it down.
-		Object.freeze(this);
+					if (keyInRange(primary, range)) records.delete(primary);
+				}
+			} catch (err) {
+				_didIteratorError = true;
+				_iteratorError = err;
+			} finally {
+				try {
+					if (!_iteratorNormalCompletion && _iterator.return) {
+						_iterator.return();
+					}
+				} finally {
+					if (_didIteratorError) {
+						throw _iteratorError;
+					}
+				}
+			}
+		});
+	}
 
-		// Count documents.
-		function count(key = undefined) {
-			// Check params.
-			if (!validKey(key) && !validKeyRange(key) && key !== undefined) throw new DOMException('count(): The key parameter was provided but does not contain a valid key (number, string, date), key range (IDBKeyRange or array of valid keys), or undefined', 'DataError');
+	// Clear all documents.
+	function clear() {
+		// Check state.
+		if (transaction._finished) throw new DOMException('IDBObjectStore.clear(): Transaction has finished', 'InvalidStateError');
+
+		// Return an IDBRequest on the transaction that deletes everything in the store.
+		return transaction._request(store, function () {
+
+			// Check state.
+			if (transaction._finished) throw new DOMException('IDBObjectStore.clear(): Transaction has finished', 'InvalidStateError');
+			if (!transaction._data[storeName]) throw new DOMException('IDBObjectStore.clear(): Object store \'' + storeName + '\' does not exist', 'InvalidStateError');
+
+			// Clear all records.
+			transaction._data[storeName].records.clear();
+		});
+	}
+
+	// Get an existing index.
+	function index(indexName) {
+		// Check params.
+		if (!validIdentifier(indexName)) throw new TypeError('IDBObjectStore.index(): indexName must be a valid identifier');
+
+		// Check state.
+		if (transaction._finished) throw new DOMException('IDBObjectStore.index(): Transaction has finished', 'InvalidStateError');
+		if (!transaction._data[storeName]) throw new DOMException('IDBObjectStore.index(): Object store \'' + storeName + '\' does not exist', 'InvalidStateError');
+		if (!transaction._data[storeName].indexes[indexName]) throw new DOMException('IDBObjectStore.index(): Index \'' + indexName + '\' does not exist', 'InvalidStateError');
+
+		// Return the existing index.
+		return new IDBIndex(store, indexName);
+	}
+
+	// Create an index on this object store.
+	function createIndex(indexName, keyPath) {
+		var _ref2 = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : { unique: false, multiEntry: false },
+		    _ref2$unique = _ref2.unique,
+		    unique = _ref2$unique === undefined ? false : _ref2$unique,
+		    _ref2$multiEntry = _ref2.multiEntry,
+		    multiEntry = _ref2$multiEntry === undefined ? false : _ref2$multiEntry;
+
+		// Check params.
+		if (!validIdentifier(indexName)) throw new TypeError('IDBObjectStore.createIndex(): indexName must be a valid identifier');
+		if (!validKeyPath(keyPath) && !validMultiKeyPath(keyPath)) throw new TypeError('IDBObjectStore.createIndex(): keyPath must be a valid key path (\'a\' or \'a.b\') or array of valid key paths');
+		if (typeof unique !== 'boolean') throw new TypeError('IDBObjectStore.createIndex(): unique must be boolean');
+		if (typeof multiEntry !== 'boolean') throw new TypeError('IDBObjectStore.createIndex(): multiEntry must be boolean');
+
+		// Block array keys.
+		if (validMultiKeyPath(keyPath)) throw new TypeError('IDBObjectStore.createIndex(): array keyPaths are not yet supported by this mock'); // @todo add support for array keyPaths.
+
+		// Check state.
+		if (transaction._finished) throw new DOMException('IDBObjectStore.createIndex(): Transaction has finished', 'InvalidStateError');
+		if (transaction.mode !== 'versionchange') throw new DOMException('IDBObjectStore.createIndex(): Can only be used used within an active \'versionchange\' transaction, not \'' + transaction.mode + '\'', 'InvalidStateError');
+		if (!transaction._data[storeName]) throw new DOMException('IDBObjectStore.createIndex(): Object store \'' + storeName + '\' does not exist', 'InvalidStateError');
+		if (transaction._data[storeName].indexes[indexName]) throw new DOMException('IDBObjectStore.createIndex(): Index already exists', 'ConstraintError');
+
+		// Create a plain data template for this index.
+		transaction._data[storeName].indexes[indexName] = { keyPath: keyPath, unique: unique, multiEntry: multiEntry };
+
+		// Return a new IDBIndex.
+		return new IDBIndex(store, indexName);
+	}
+
+	// Delete an index on this object store.
+	function deleteIndex(indexName) {
+		// Check params.
+		if (!validIdentifier(indexName)) throw new TypeError('IDBObjectStore.deleteIndex(): indexName must be a valid identifier');
+
+		// Check state.
+		if (transaction._finished) throw new DOMException('IDBObjectStore.deleteIndex(): Transaction has finished', 'InvalidStateError');
+		if (transaction.mode !== 'versionchange') throw new DOMException('IDBObjectStore.deleteIndex(): Can only be used used within an active \'versionchange\' transaction, not \'' + transaction.mode + '\'', 'InvalidStateError');
+		if (!transaction._data[storeName]) throw new DOMException('IDBObjectStore.deleteIndex(): Object store \'' + storeName + '\' does not exist', 'InvalidStateError');
+		if (!transaction._data[storeName].indexes[indexName]) throw new DOMException('IDBObjectStore.deleteIndex(): Index \'' + indexName + '\' does not exist', 'NotFoundError');
+
+		// Delete the index.
+		delete transaction._data[storeName].indexes[indexName];
+	}
+};
+
+// IDBIndex mock.
+
+
+var IDBIndex =
+// Construct.
+function IDBIndex(store, indexName) {
+	_classCallCheck(this, IDBIndex);
+
+	// Check params.
+	if (!(store instanceof IDBObjectStore)) throw new TypeError('IDBIndex: store must be an IDBObjectStore');
+	if (!validIdentifier(indexName)) throw new TypeError('IDBIndex: indexName must be a valid identifier');
+
+	// Vars.
+	var index = this;
+	var storeName = store.name;
+	var transaction = store.transaction;
+
+	// Check state.
+	if (!transaction._data[storeName]) throw new DOMException('IDBIndex: Object store \'' + storeName + '\' does not exist', 'InvalidStateError');
+	if (!transaction._data[storeName].indexes[indexName]) throw new DOMException('IDBIndex: Index \'' + indexName + '\' does not exist', 'InvalidStateError');
+
+	// Vars.
+	var _transaction$_data$st2 = transaction._data[storeName].indexes[indexName],
+	    keyPath = _transaction$_data$st2.keyPath,
+	    unique = _transaction$_data$st2.unique,
+	    multiEntry = _transaction$_data$st2.multiEntry;
+
+	// Properties.
+
+	Object.defineProperty(this, 'objectStore', { value: store, enumerable: true });
+	Object.defineProperty(this, 'name', { value: indexName, enumerable: true });
+	Object.defineProperty(this, 'keyPath', { value: keyPath, enumerable: true });
+	Object.defineProperty(this, 'multiEntry', { value: multiEntry, enumerable: true });
+	Object.defineProperty(this, 'unique', { value: unique, enumerable: true });
+
+	// Methods.
+	Object.defineProperty(this, 'count', { value: count });
+	Object.defineProperty(this, 'get', { value: get });
+	Object.defineProperty(this, 'openCursor', { value: openCursor });
+
+	// Lock it down.
+	Object.freeze(this);
+
+	// Count documents.
+	function count() {
+		var key = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : undefined;
+
+		// Check params.
+		if (!validKey(key) && !validKeyRange(key) && key !== undefined) throw new DOMException('count(): The key parameter was provided but does not contain a valid key (number, string, date), key range (IDBKeyRange or array of valid keys), or undefined', 'DataError');
+
+		// Check state.
+		if (transaction._finished) throw new DOMException('IDBIndex.count(): Transaction has finished', 'InvalidStateError');
+		if (!transaction._data[storeName]) throw new DOMException('IDBIndex.count(): Object store \'' + storeName + '\' does not exist', 'InvalidStateError');
+		if (!transaction._data[storeName].indexes[indexName]) throw new DOMException('IDBIndex.count(): Index \'' + indexName + '\' does not exist', 'InvalidStateError');
+
+		// Return an IDBRequest on the transaction returns the count from a cursor.
+		return transaction._request(index, function (request) {
 
 			// Check state.
 			if (transaction._finished) throw new DOMException('IDBIndex.count(): Transaction has finished', 'InvalidStateError');
 			if (!transaction._data[storeName]) throw new DOMException('IDBIndex.count(): Object store \'' + storeName + '\' does not exist', 'InvalidStateError');
 			if (!transaction._data[storeName].indexes[indexName]) throw new DOMException('IDBIndex.count(): Index \'' + indexName + '\' does not exist', 'InvalidStateError');
 
-			// Return an IDBRequest on the transaction returns the count from a cursor.
-			return transaction._request(index, request => {
+			// Return the number of keys found on the cursor.
+			return new IDBCursor(request, key)._count;
+		});
+	}
 
-				// Check state.
-				if (transaction._finished) throw new DOMException('IDBIndex.count(): Transaction has finished', 'InvalidStateError');
-				if (!transaction._data[storeName]) throw new DOMException('IDBIndex.count(): Object store \'' + storeName + '\' does not exist', 'InvalidStateError');
-				if (!transaction._data[storeName].indexes[indexName]) throw new DOMException('IDBIndex.count(): Index \'' + indexName + '\' does not exist', 'InvalidStateError');
+	// Get a single result.
+	// Returns a request that fires a 'success' event when its result is available.
+	// `request.result` will be either:
+	// 1. The value for the first result with a key matching `key`.
+	// 2. `undefined`, if there are no matching results.
+	function get() {
+		var key = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : undefined;
 
-				// Return the number of keys found on the cursor.
-				return new IDBCursor(request, key)._count;
-			});
-		}
+		// Check params.
+		if (!validKey(key) && !validKeyRange(key) && key !== undefined) throw new DOMException('count(): The key parameter was provided but does not contain a valid key (number, string, date), key range (IDBKeyRange or array of valid keys), or undefined', 'DataError');
 
-		// Get a single result.
-		// Returns a request that fires a 'success' event when its result is available.
-		// `request.result` will be either:
-		// 1. The value for the first result with a key matching `key`.
-		// 2. `undefined`, if there are no matching results.
-		function get(key = undefined) {
-			// Check params.
-			if (!validKey(key) && !validKeyRange(key) && key !== undefined) throw new DOMException('count(): The key parameter was provided but does not contain a valid key (number, string, date), key range (IDBKeyRange or array of valid keys), or undefined', 'DataError');
+		// Check state.
+		if (transaction._finished) throw new DOMException('IDBIndex.get(): Transaction has finished', 'InvalidStateError');
+		if (!transaction._data[storeName]) throw new DOMException('IDBIndex.get(): Object store \'' + storeName + '\' does not exist', 'InvalidStateError');
+		if (!transaction._data[storeName].indexes[indexName]) throw new DOMException('IDBIndex.get(): Index \'' + indexName + '\' does not exist', 'InvalidStateError');
+
+		// Return an IDBRequest on the transaction.
+		return transaction._request(index, function (request) {
 
 			// Check state.
 			if (transaction._finished) throw new DOMException('IDBIndex.get(): Transaction has finished', 'InvalidStateError');
 			if (!transaction._data[storeName]) throw new DOMException('IDBIndex.get(): Object store \'' + storeName + '\' does not exist', 'InvalidStateError');
 			if (!transaction._data[storeName].indexes[indexName]) throw new DOMException('IDBIndex.get(): Index \'' + indexName + '\' does not exist', 'InvalidStateError');
 
-			// Return an IDBRequest on the transaction.
-			return transaction._request(index, request => {
+			// Return the value of the first key found by the cursor.
+			return new IDBCursorWithValue(request, key).value;
+		});
+	}
 
-				// Check state.
-				if (transaction._finished) throw new DOMException('IDBIndex.get(): Transaction has finished', 'InvalidStateError');
-				if (!transaction._data[storeName]) throw new DOMException('IDBIndex.get(): Object store \'' + storeName + '\' does not exist', 'InvalidStateError');
-				if (!transaction._data[storeName].indexes[indexName]) throw new DOMException('IDBIndex.get(): Index \'' + indexName + '\' does not exist', 'InvalidStateError');
+	// Open a cursor to retrieve several results.
+	// Returns a request that fires one or more 'success' events when its results is available.
+	// Continues to fire 'success' as many times as `cursor.continue()` is called and results are available.
+	// request.result will be either:
+	// 1. An `IDBCursor` (with `cursor.value` and `cursor.key` to read values, and `cursor.continue()` method to continue).
+	// 2. `undefined`, if there are no more results.
+	function openCursor() {
+		var query = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : undefined;
+		var direction = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'next';
 
-				// Return the value of the first key found by the cursor.
-				return new IDBCursorWithValue(request, key).value;
-			});
-		}
+		// Check params.
+		if (!validKey(query) && !validKeyRange(query) && query !== undefined) throw new DOMException('count(): The query parameter was provided but does not contain a valid key (number, string, date), key range (IDBKeyRange or array of valid keys), or undefined', 'DataError');
+		if (direction !== 'next' && direction !== 'nextunique' && direction !== 'prev' && direction !== 'prevunique') throw new TypeError('IDBCursor: direction must be one of \'next\', \'nextunique\', \'prev\', \'prevunique\'');
 
-		// Open a cursor to retrieve several results.
-		// Returns a request that fires one or more 'success' events when its results is available.
-		// Continues to fire 'success' as many times as `cursor.continue()` is called and results are available.
-		// request.result will be either:
-		// 1. An `IDBCursor` (with `cursor.value` and `cursor.key` to read values, and `cursor.continue()` method to continue).
-		// 2. `undefined`, if there are no more results.
-		function openCursor(query = undefined, direction = 'next') {
-			// Check params.
-			if (!validKey(query) && !validKeyRange(query) && query !== undefined) throw new DOMException('count(): The query parameter was provided but does not contain a valid key (number, string, date), key range (IDBKeyRange or array of valid keys), or undefined', 'DataError');
-			if (direction !== 'next' && direction !== 'nextunique' && direction !== 'prev' && direction !== 'prevunique') throw new TypeError('IDBCursor: direction must be one of \'next\', \'nextunique\', \'prev\', \'prevunique\'');
+		// Check state.
+		if (transaction._finished) throw new DOMException('IDBIndex.openCursor(): Transaction has finished', 'InvalidStateError');
+		if (!transaction._data[storeName]) throw new DOMException('IDBIndex.openCursor(): Object store \'' + storeName + '\' does not exist', 'InvalidStateError');
+		if (!transaction._data[storeName].indexes[indexName]) throw new DOMException('IDBIndex.openCursor(): Index \'' + indexName + '\' does not exist', 'InvalidStateError');
+
+		// Return an IDBRequest.
+		// The result of the request is an IDBCursor (if there's a value at the current cursor position),
+		// or undefined (if there isn't, because we iterated past the end or there were no results).
+		var cursor = void 0;
+		return transaction._request(index, function (request) {
 
 			// Check state.
 			if (transaction._finished) throw new DOMException('IDBIndex.openCursor(): Transaction has finished', 'InvalidStateError');
 			if (!transaction._data[storeName]) throw new DOMException('IDBIndex.openCursor(): Object store \'' + storeName + '\' does not exist', 'InvalidStateError');
 			if (!transaction._data[storeName].indexes[indexName]) throw new DOMException('IDBIndex.openCursor(): Index \'' + indexName + '\' does not exist', 'InvalidStateError');
 
-			// Return an IDBRequest.
-			// The result of the request is an IDBCursor (if there's a value at the current cursor position),
-			// or undefined (if there isn't, because we iterated past the end or there were no results).
-			let cursor;
-			return transaction._request(index, request => {
+			// Make a cursor if it doesn't exist.
+			// Don't create the cursor until the request is run.
+			// (Otherwise records added by other requests between this request being created and it being run, won't be included.)
+			if (!cursor) cursor = new IDBCursorWithValue(request, query, direction);
 
-				// Check state.
-				if (transaction._finished) throw new DOMException('IDBIndex.openCursor(): Transaction has finished', 'InvalidStateError');
-				if (!transaction._data[storeName]) throw new DOMException('IDBIndex.openCursor(): Object store \'' + storeName + '\' does not exist', 'InvalidStateError');
-				if (!transaction._data[storeName].indexes[indexName]) throw new DOMException('IDBIndex.openCursor(): Index \'' + indexName + '\' does not exist', 'InvalidStateError');
-
-				// Make a cursor if it doesn't exist.
-				// Don't create the cursor until the request is run.
-				// (Otherwise records added by other requests between this request being created and it being run, won't be included.)
-				if (!cursor) cursor = new IDBCursorWithValue(request, query, direction);
-
-				// Return cursor if there is a value.
-				return cursor.primaryKey !== undefined ? cursor : undefined;
-			});
-		}
+			// Return cursor if there is a value.
+			return cursor.primaryKey !== undefined ? cursor : undefined;
+		});
 	}
-}
+};
 
 // IDBCursor mock.
-class IDBCursor {
-	// Construct.
-	constructor(request, range = undefined, direction = 'next', withValue = false) {
-		// Check params.
-		if (!(request instanceof IDBRequest)) throw new TypeError('IDBCursor: request must be an IDBRequest');
-		if (!(request.source instanceof IDBObjectStore) && !(request.source instanceof IDBIndex)) throw new TypeError('IDBCursor: request must have a source that must be an IDBObjectStore or an IDBIndex');
-		if (direction !== 'next' && direction !== 'nextunique' && direction !== 'prev' && direction !== 'prevunique') throw new TypeError('IDBCursor: direction must be one of \'next\', \'nextunique\', \'prev\', \'prevunique\'');
-		if (!validKey(range) && !validKeyRange(range) && range !== undefined) throw new TypeError('IDBCursor: range must be a valid key (string, number, date), key range (array, IDBKeyRange), or undefined');
 
-		// Vars.
-		const transaction = request.transaction;
-		const source = request.source;
-		const store = source instanceof IDBObjectStore ? source : source.objectStore;
-		const storeName = store.name;
-		const index = source instanceof IDBIndex ? source : null;
-		const indexName = index ? index.name : null;
+
+var IDBCursor =
+// Construct.
+function IDBCursor(request) {
+	var range = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : undefined;
+	var direction = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'next';
+	var withValue = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
+
+	_classCallCheck(this, IDBCursor);
+
+	// Check params.
+	if (!(request instanceof IDBRequest)) throw new TypeError('IDBCursor: request must be an IDBRequest');
+	if (!(request.source instanceof IDBObjectStore) && !(request.source instanceof IDBIndex)) throw new TypeError('IDBCursor: request must have a source that must be an IDBObjectStore or an IDBIndex');
+	if (direction !== 'next' && direction !== 'nextunique' && direction !== 'prev' && direction !== 'prevunique') throw new TypeError('IDBCursor: direction must be one of \'next\', \'nextunique\', \'prev\', \'prevunique\'');
+	if (!validKey(range) && !validKeyRange(range) && range !== undefined) throw new TypeError('IDBCursor: range must be a valid key (string, number, date), key range (array, IDBKeyRange), or undefined');
+
+	// Vars.
+	var transaction = request.transaction;
+	var source = request.source;
+	var store = source instanceof IDBObjectStore ? source : source.objectStore;
+	var storeName = store.name;
+	var index = source instanceof IDBIndex ? source : null;
+	var indexName = index ? index.name : null;
+
+	// Check state.
+	if (!transaction._data[storeName]) throw new DOMException('IDBCursor: Object store \'' + storeName + '\' does not exist', 'InvalidStateError');
+	if (index && !transaction._data[storeName].indexes[indexName]) throw new DOMException('IDBCursor: Index \'' + indexName + '\' does not exist', 'InvalidStateError');
+
+	// Vars.
+	var keys = find(transaction._data[storeName].records);
+	var value = undefined;
+	var key = undefined;
+	var primaryKey = undefined;
+
+	// Properties.
+	Object.defineProperty(this, 'request', { value: request, enumerable: true });
+	Object.defineProperty(this, 'source', { value: source, enumerable: true });
+	Object.defineProperty(this, 'direction', { value: direction, enumerable: true });
+	Object.defineProperty(this, 'key', {
+		enumerable: true,
+		get: function get() {
+			return key;
+		},
+		set: function set() {
+			throw new Error('IDBCursor: key is read only');
+		}
+	});
+	Object.defineProperty(this, 'primaryKey', {
+		enumerable: true,
+		get: function get() {
+			return primaryKey;
+		},
+		set: function set() {
+			throw new Error('IDBCursor: primaryKey is read only');
+		}
+	});
+	if (withValue) Object.defineProperty(this, 'value', {
+		enumerable: true,
+		get: function get() {
+			return value;
+		},
+		set: function set() {
+			throw new Error('IDBCursor: value is read only');
+		}
+	});
+	Object.defineProperty(this, '_count', { value: keys.length });
+
+	// Go to the first key.
+	progress();
+
+	// Methods.
+	Object.defineProperty(this, 'advance', { value: advance });
+	Object.defineProperty(this, 'continue', { value: _continue });
+	Object.defineProperty(this, 'continuePrimaryKey', { value: continuePrimaryKey });
+	if (withValue) Object.defineProperty(this, 'delete', { value: _delete });
+	if (withValue) Object.defineProperty(this, 'update', { value: update });
+
+	// Lock it down.
+	Object.freeze(this);
+
+	// Functions.
+	function progress() {
+		// Set key, value, primaryKey
+		if (keys.length) {
+			// Get key and primaryKey from list.
+			key = keys[0][0];
+			primaryKey = keys[0][1];
+			keys.shift();
+
+			// Fill in the value if neccessary.possible.
+			if (withValue) value = transaction._data[storeName].records.get(primaryKey);
+		} else {
+			key = undefined;
+			primaryKey = undefined;
+			value = undefined;
+		}
+	}
+
+	// Sets the number times a cursor should move its position forward.
+	function advance(count) {
+		// Check params.
+		if (typeof count !== 'number') throw new TypeError('advance(): count must be a number');
+		if (count <= 0) throw new TypeError('advance(): count must be 1 or more');
 
 		// Check state.
-		if (!transaction._data[storeName]) throw new DOMException('IDBCursor: Object store \'' + storeName + '\' does not exist', 'InvalidStateError');
-		if (index && !transaction._data[storeName].indexes[indexName]) throw new DOMException('IDBCursor: Index \'' + indexName + '\' does not exist', 'InvalidStateError');
+		if (!keys.length) throw new DOMException('advance(): Cursor has iterated past the end of the set', 'InvalidStateError');
+		if (request.readyState !== 'done') throw new DOMException('advance(): Cursor is currently iterating', 'InvalidStateError');
+		if (!transaction._data[storeName]) throw new DOMException('advance(): Object store \'' + storeName + '\' does not exist', 'InvalidStateError');
 
-		// Vars.
-		const keys = find(transaction._data[storeName].records);
-		let value = undefined;
-		let key = undefined;
-		let primaryKey = undefined;
+		// Move forward by count.
+		for (var i = 0; i < count; i++) {
+			progress();
+		} // Run the request again.
+		request._rerun();
+	}
 
-		// Properties.
-		Object.defineProperty(this, 'request', { value: request, enumerable: true });
-		Object.defineProperty(this, 'source', { value: source, enumerable: true });
-		Object.defineProperty(this, 'direction', { value: direction, enumerable: true });
-		Object.defineProperty(this, 'key', {
-			enumerable: true,
-			get() {
-				return key;
-			},
-			set() {
-				throw new Error('IDBCursor: key is read only');
-			}
-		});
-		Object.defineProperty(this, 'primaryKey', {
-			enumerable: true,
-			get() {
-				return primaryKey;
-			},
-			set() {
-				throw new Error('IDBCursor: primaryKey is read only');
-			}
-		});
-		if (withValue) Object.defineProperty(this, 'value', {
-			enumerable: true,
-			get() {
-				return value;
-			},
-			set() {
-				throw new Error('IDBCursor: value is read only');
-			}
-		});
-		Object.defineProperty(this, '_count', { value: keys.length });
+	// Continue on to the next one, or onto a specific one.
+	function _continue() {
+		var targetKey = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : undefined;
 
-		// Go to the first key.
+		// Check params.
+		if (!validKey(targetKey) && !validKeyRange(targetKey) && targetKey !== undefined) throw new DOMException('continue(): targetKey must be a valid key (string, number, date), key range (array or IDBKeyRange), or undefined', 'DataError');
+
+		// Check state.
+		if (!primaryKey) throw new DOMException('continue(): Cursor has iterated past the end of the set', 'InvalidStateError');
+		if (request.readyState !== 'done') throw new DOMException('continue(): Cursor is currently iterating', 'InvalidStateError');
+		if (!transaction._data[storeName]) throw new DOMException('continue(): Object store \'' + storeName + '\' does not exist', 'InvalidStateError');
+
+		// Move forward by one.
 		progress();
 
-		// Methods.
-		Object.defineProperty(this, 'advance', { value: advance });
-		Object.defineProperty(this, 'continue', { value: _continue });
-		Object.defineProperty(this, 'continuePrimaryKey', { value: continuePrimaryKey });
-		if (withValue) Object.defineProperty(this, 'delete', { value: _delete });
-		if (withValue) Object.defineProperty(this, 'update', { value: update });
-
-		// Lock it down.
-		Object.freeze(this);
-
-		// Functions.
-		function progress() {
-			// Set key, value, primaryKey
-			if (keys.length) {
-				// Get key and primaryKey from list.
-				key = keys[0][0];
-				primaryKey = keys[0][1];
-				keys.shift();
-
-				// Fill in the value if neccessary.possible.
-				if (withValue) value = transaction._data[storeName].records.get(primaryKey);
-			} else {
-				key = undefined;
-				primaryKey = undefined;
-				value = undefined;
-			}
-		}
-
-		// Sets the number times a cursor should move its position forward.
-		function advance(count) {
-			// Check params.
-			if (typeof count !== 'number') throw new TypeError('advance(): count must be a number');
-			if (count <= 0) throw new TypeError('advance(): count must be 1 or more');
-
-			// Check state.
-			if (!keys.length) throw new DOMException('advance(): Cursor has iterated past the end of the set', 'InvalidStateError');
-			if (request.readyState !== 'done') throw new DOMException('advance(): Cursor is currently iterating', 'InvalidStateError');
-			if (!transaction._data[storeName]) throw new DOMException('advance(): Object store \'' + storeName + '\' does not exist', 'InvalidStateError');
-
-			// Move forward by count.
-			for (let i = 0; i < count; i++) progress();
-
-			// Run the request again.
-			request._rerun();
-		}
-
-		// Continue on to the next one, or onto a specific one.
-		function _continue(targetKey = undefined) {
-			// Check params.
-			if (!validKey(targetKey) && !validKeyRange(targetKey) && targetKey !== undefined) throw new DOMException('continue(): targetKey must be a valid key (string, number, date), key range (array or IDBKeyRange), or undefined', 'DataError');
-
-			// Check state.
-			if (!primaryKey) throw new DOMException('continue(): Cursor has iterated past the end of the set', 'InvalidStateError');
-			if (request.readyState !== 'done') throw new DOMException('continue(): Cursor is currently iterating', 'InvalidStateError');
-			if (!transaction._data[storeName]) throw new DOMException('continue(): Object store \'' + storeName + '\' does not exist', 'InvalidStateError');
-
-			// Move forward by one.
+		// If key is not null, continue to progress until we find key or reach the end.
+		if (targetKey !== undefined) while (primaryKey !== undefined && !keyInRange(key, targetKey)) {
 			progress();
+		} // Run the request again.
+		request._rerun();
+	}
 
-			// If key is not null, continue to progress until we find key or reach the end.
-			if (targetKey !== undefined) while (primaryKey !== undefined && !keyInRange(key, targetKey)) progress();
+	// Continue on to the next one that matches
+	function continuePrimaryKey(targetKey, targetPrimaryKey) {
+		// Check params.
+		if (!validKey(targetKey) && !validKeyRange(targetKey)) throw new DOMException('continuePrimaryKey(): targetKey must be a valid key (string, number, date) or key range (array or IDBKeyRange)', 'DataError');
+		if (!validKey(targetPrimaryKey) && !validKeyRange(targetPrimaryKey)) throw new DOMException('continuePrimaryKey(): targetPrimaryKey must be a valid key (string, number, date) or key range (array or IDBKeyRange)', 'DataError');
 
-			// Run the request again.
-			request._rerun();
-		}
+		// Check state.
+		if (!keys.length) throw new DOMException('continuePrimaryKey(): Cursor has iterated past the end of the set', 'InvalidStateError');
+		if (request.readyState !== 'done') throw new DOMException('continuePrimaryKey(): Cursor is currently iterating', 'InvalidStateError');
+		if (!transaction._data[storeName]) throw new DOMException('continuePrimaryKey(): Object store \'' + storeName + '\' does not exist', 'InvalidStateError');
 
-		// Continue on to the next one that matches
-		function continuePrimaryKey(targetKey, targetPrimaryKey) {
-			// Check params.
-			if (!validKey(targetKey) && !validKeyRange(targetKey)) throw new DOMException('continuePrimaryKey(): targetKey must be a valid key (string, number, date) or key range (array or IDBKeyRange)', 'DataError');
-			if (!validKey(targetPrimaryKey) && !validKeyRange(targetPrimaryKey)) throw new DOMException('continuePrimaryKey(): targetPrimaryKey must be a valid key (string, number, date) or key range (array or IDBKeyRange)', 'DataError');
+		// Continue until we find a value that has the right key and primaryKey.
+		while (primaryKey !== undefined && !keyInRange(key, targetKey) && !keyInRange(primaryKey, targetPrimaryKey)) {
+			progress();
+		} // Run the request again.
+		request._rerun();
+	}
 
-			// Check state.
-			if (!keys.length) throw new DOMException('continuePrimaryKey(): Cursor has iterated past the end of the set', 'InvalidStateError');
-			if (request.readyState !== 'done') throw new DOMException('continuePrimaryKey(): Cursor is currently iterating', 'InvalidStateError');
-			if (!transaction._data[storeName]) throw new DOMException('continuePrimaryKey(): Object store \'' + storeName + '\' does not exist', 'InvalidStateError');
+	// Delete the current primary key.
+	function _delete() {
+		// Checks.
+		if (primaryKey !== null) throw new DOMException('delete(): Cursor does not have a value', 'InvalidStateError');
 
-			// Continue until we find a value that has the right key and primaryKey.
-			while (primaryKey !== undefined && !keyInRange(key, targetKey) && !keyInRange(primaryKey, targetPrimaryKey)) progress();
+		// Return a request from IDBObjectStore.delete().
+		return store.delete(primaryKey);
+	}
 
-			// Run the request again.
-			request._rerun();
-		}
+	// Update the current primary key.
+	function update(value) {
+		// Checks.
+		if (primaryKey !== null) throw new DOMException('update(): Cursor does not have a value', 'InvalidStateError');
 
-		// Delete the current primary key.
-		function _delete() {
-			// Checks.
-			if (primaryKey !== null) throw new DOMException('delete(): Cursor does not have a value', 'InvalidStateError');
+		// Return a request from IDBObjectStore.put().
+		return store.put(value, primaryKey);
+	}
 
-			// Return a request from IDBObjectStore.delete().
-			return store.delete(primaryKey);
-		}
+	// Find matching keys.
+	function find(records) {
+		// Vars.
+		var keys = [];
 
-		// Update the current primary key.
-		function update(value) {
-			// Checks.
-			if (primaryKey !== null) throw new DOMException('update(): Cursor does not have a value', 'InvalidStateError');
+		// Source is index or object store?
+		if (index) {
+			// Index source.
+			// Loop through records.
+			var _iteratorNormalCompletion2 = true;
+			var _didIteratorError2 = false;
+			var _iteratorError2 = undefined;
 
-			// Return a request from IDBObjectStore.put().
-			return store.put(value, primaryKey);
-		}
+			try {
+				for (var _iterator2 = records[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+					var _step2$value = _slicedToArray(_step2.value, 2),
+					    primary = _step2$value[0],
+					    _value = _step2$value[1];
 
-		// Find matching keys.
-		function find(records) {
-			// Vars.
-			const keys = [];
-
-			// Source is index or object store?
-			if (index) {
-				// Index source.
-				// Loop through records.
-				var _iteratorNormalCompletion2 = true;
-				var _didIteratorError2 = false;
-				var _iteratorError2 = undefined;
-
-				try {
-					for (var _iterator2 = records[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-						const _ref3 = _step2.value;
-
-						var _ref4 = _slicedToArray(_ref3, 2);
-
-						const primary = _ref4[0];
-						const value = _ref4[1];
-
-						// Get key at index.keyPath and filter.
-						const key = value instanceof Object ? value[index.keyPath] : undefined;
-						if (range === undefined || keyInRange(key, range)) keys.push([key, primary]);
-					}
-				} catch (err) {
-					_didIteratorError2 = true;
-					_iteratorError2 = err;
-				} finally {
-					try {
-						if (!_iteratorNormalCompletion2 && _iterator2.return) {
-							_iterator2.return();
-						}
-					} finally {
-						if (_didIteratorError2) {
-							throw _iteratorError2;
-						}
-					}
+					// Get key at index.keyPath and filter.
+					var _key = _value instanceof Object ? _value[index.keyPath] : undefined;
+					if (range === undefined || keyInRange(_key, range)) keys.push([_key, primary]);
 				}
-			} else {
-				// Object store source.
-				// Loop through records and filter.
-				var _iteratorNormalCompletion3 = true;
-				var _didIteratorError3 = false;
-				var _iteratorError3 = undefined;
-
+			} catch (err) {
+				_didIteratorError2 = true;
+				_iteratorError2 = err;
+			} finally {
 				try {
-					for (var _iterator3 = records[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-						const _ref5 = _step3.value;
-
-						var _ref6 = _slicedToArray(_ref5, 1);
-
-						const primary = _ref6[0];
-						if (range === undefined || keyInRange(primary, range)) keys.push([primary, primary]);
+					if (!_iteratorNormalCompletion2 && _iterator2.return) {
+						_iterator2.return();
 					}
-				} catch (err) {
-					_didIteratorError3 = true;
-					_iteratorError3 = err;
 				} finally {
-					try {
-						if (!_iteratorNormalCompletion3 && _iterator3.return) {
-							_iterator3.return();
-						}
-					} finally {
-						if (_didIteratorError3) {
-							throw _iteratorError3;
-						}
+					if (_didIteratorError2) {
+						throw _iteratorError2;
 					}
 				}
 			}
+		} else {
+			// Object store source.
+			// Loop through records and filter.
+			var _iteratorNormalCompletion3 = true;
+			var _didIteratorError3 = false;
+			var _iteratorError3 = undefined;
 
-			// Sort the keys by key.
-			const sortedKeys = keys.sort((a, b) => IDBFactory.cmp(a[0], b[0]));
+			try {
+				for (var _iterator3 = records[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+					var _step3$value = _slicedToArray(_step3.value, 1),
+					    primary = _step3$value[0];
 
-			// Possibly remove duplicate keys.
-			if (direction === 'nextunique' || direction === 'prevunique') for (let i = sortedKeys.length - 2; i >= 0; i--) if (sortedKeys[i] === sortedKeys[i + 1]) sortedKeys.splice(i + 1, 1);
-
-			// Possibly reverse the keys.
-			if (direction === 'prev' || direction === 'prevunique') sortedKeys.reverse();
-
-			// Return.
-			return sortedKeys;
+					if (range === undefined || keyInRange(primary, range)) keys.push([primary, primary]);
+				}
+			} catch (err) {
+				_didIteratorError3 = true;
+				_iteratorError3 = err;
+			} finally {
+				try {
+					if (!_iteratorNormalCompletion3 && _iterator3.return) {
+						_iterator3.return();
+					}
+				} finally {
+					if (_didIteratorError3) {
+						throw _iteratorError3;
+					}
+				}
+			}
 		}
+
+		// Sort the keys by key.
+		var sortedKeys = keys.sort(function (a, b) {
+			return IDBFactory.cmp(a[0], b[0]);
+		});
+
+		// Possibly remove duplicate keys.
+		if (direction === 'nextunique' || direction === 'prevunique') for (var i = sortedKeys.length - 2; i >= 0; i--) {
+			if (sortedKeys[i] === sortedKeys[i + 1]) sortedKeys.splice(i + 1, 1);
+		} // Possibly reverse the keys.
+		if (direction === 'prev' || direction === 'prevunique') sortedKeys.reverse();
+
+		// Return.
+		return sortedKeys;
 	}
-}
+};
 
 // IDBCursorWithValue mock.
-class IDBCursorWithValue extends IDBCursor {
+
+
+var IDBCursorWithValue = function (_IDBCursor) {
+	_inherits(IDBCursorWithValue, _IDBCursor);
+
 	// Construct.
-	constructor(request, range = undefined, direction = 'next') {
+	function IDBCursorWithValue(request) {
+		var range = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : undefined;
+		var direction = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'next';
+
+		_classCallCheck(this, IDBCursorWithValue);
+
 		// Super.
-		super(request, range, direction, true);
+		return _possibleConstructorReturn(this, (IDBCursorWithValue.__proto__ || Object.getPrototypeOf(IDBCursorWithValue)).call(this, request, range, direction, true));
 	}
-}
+
+	return IDBCursorWithValue;
+}(IDBCursor);
 
 // IDBKeyRange mock.
-class IDBKeyRange {
-	// Construct.
-	constructor(lower, upper, lowerOpen = false, upperOpen = false) {
+
+
+var IDBKeyRange =
+// Construct.
+function IDBKeyRange(lower, upper) {
+	var lowerOpen = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
+	var upperOpen = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
+
+	_classCallCheck(this, IDBKeyRange);
+
+	// Checks.
+	if (!validKey(lower) && lower !== undefined) throw new DOMException('IDBKeyRange: lower must be a valid key (string, number, date) or undefined', 'DataError');
+	if (!validKey(upper) && upper !== undefined) throw new DOMException('IDBKeyRange: upper must be a valid key (string, number, date) or undefined', 'DataError');
+	if (typeof lowerOpen !== 'boolean') throw new DOMException('IDBKeyRange: lowerOpen must be boolean', 'DataError');
+	if (typeof upperOpen !== 'boolean') throw new DOMException('IDBKeyRange: upperOpen must be boolean', 'DataError');
+	if (lower > upper) throw new DOMException('IDBKeyRange: lower must be lower than upper', 'DataError');
+
+	// Properties.
+	Object.defineProperty(this, 'lower', { value: lower, enumerable: true });
+	Object.defineProperty(this, 'upper', { value: upper, enumerable: true });
+	Object.defineProperty(this, 'lowerOpen', { value: lowerOpen, enumerable: true });
+	Object.defineProperty(this, 'upperOpen', { value: upperOpen, enumerable: true });
+
+	// Methods.
+	Object.defineProperty(this, 'includes', { value: includes });
+
+	// Lock it down.
+	Object.freeze(this);
+
+	// Whether or not the given value is included in this range.
+	function includes(key) {
 		// Checks.
-		if (!validKey(lower) && lower !== undefined) throw new DOMException('IDBKeyRange: lower must be a valid key (string, number, date) or undefined', 'DataError');
-		if (!validKey(upper) && upper !== undefined) throw new DOMException('IDBKeyRange: upper must be a valid key (string, number, date) or undefined', 'DataError');
-		if (typeof lowerOpen !== 'boolean') throw new DOMException('IDBKeyRange: lowerOpen must be boolean', 'DataError');
-		if (typeof upperOpen !== 'boolean') throw new DOMException('IDBKeyRange: upperOpen must be boolean', 'DataError');
-		if (lower > upper) throw new DOMException('IDBKeyRange: lower must be lower than upper', 'DataError');
+		if (!validKey(key)) throw new DOMException('includes(): key must be a valid key (string, number, date)', 'DataError');
 
-		// Properties.
-		Object.defineProperty(this, 'lower', { value: lower, enumerable: true });
-		Object.defineProperty(this, 'upper', { value: upper, enumerable: true });
-		Object.defineProperty(this, 'lowerOpen', { value: lowerOpen, enumerable: true });
-		Object.defineProperty(this, 'upperOpen', { value: upperOpen, enumerable: true });
-
-		// Methods.
-		Object.defineProperty(this, 'includes', { value: includes });
-
-		// Lock it down.
-		Object.freeze(this);
-
-		// Whether or not the given value is included in this range.
-		function includes(key) {
-			// Checks.
-			if (!validKey(key)) throw new DOMException('includes(): key must be a valid key (string, number, date)', 'DataError');
-
-			// See if it's in the range.
-			if (upper !== undefined) {
-				if (upperOpen) {
-					if (key >= upper) return false;
-				} else {
-					if (key > upper) return false;
-				}
+		// See if it's in the range.
+		if (upper !== undefined) {
+			if (upperOpen) {
+				if (key >= upper) return false;
+			} else {
+				if (key > upper) return false;
 			}
-			if (lower !== undefined) {
-				if (lowerOpen) {
-					if (key <= lower) return false;
-				} else {
-					if (key < lower) return false;
-				}
-			}
-			return true;
 		}
+		if (lower !== undefined) {
+			if (lowerOpen) {
+				if (key <= lower) return false;
+			} else {
+				if (key < lower) return false;
+			}
+		}
+		return true;
 	}
-}
+};
 
 // Create a key range with upper/lower bounds (static).
-IDBKeyRange.bound = function (lower, upper, lowerOpen = false, upperOpen = false) {
+
+
+IDBKeyRange.bound = function (lower, upper) {
+	var lowerOpen = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
+	var upperOpen = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
+
 	// Checks.
 	if (!validKey(lower)) throw new DOMException('bound(): lower must be a valid key (string, number, date)', 'DataError');
 	if (!validKey(upper)) throw new DOMException('bound(): upper must be a valid key (string, number, date)', 'DataError');
@@ -1405,7 +1526,9 @@ IDBKeyRange.only = function (value) {
 };
 
 // Create a key range with a lower bound but no upper bound (static).
-IDBKeyRange.lowerBound = function (value, open = false) {
+IDBKeyRange.lowerBound = function (value) {
+	var open = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+
 	// Checks.
 	if (!validKey(value)) throw new DOMException('lowerBound(): value must be a valid key (string, number, date)', 'DataError');
 	if (typeof open !== 'boolean') throw new DOMException('lowerBound(): open must be boolean', 'DataError');
@@ -1415,7 +1538,9 @@ IDBKeyRange.lowerBound = function (value, open = false) {
 };
 
 // Create a key range with an upper bound but no lower bound (static).
-IDBKeyRange.upperBound = function (value, open = false) {
+IDBKeyRange.upperBound = function (value) {
+	var open = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+
 	// Checks.
 	if (!validKey(value)) throw new DOMException('upperBound(): value must be a valid key (string, number, date)', 'DataError');
 	if (typeof open !== 'boolean') throw new DOMException('upperBound(): open must be boolean', 'DataError');
@@ -1425,57 +1550,85 @@ IDBKeyRange.upperBound = function (value, open = false) {
 };
 
 // IDBVersionChangeEvent mock.
-class IDBVersionChangeEvent extends Event {
+
+var IDBVersionChangeEvent = function (_Event) {
+	_inherits(IDBVersionChangeEvent, _Event);
+
 	// Construct.
-	constructor(name, oldVersion, newVersion) {
+	function IDBVersionChangeEvent(name, oldVersion, newVersion) {
+		_classCallCheck(this, IDBVersionChangeEvent);
+
 		// Check.
 		if (typeof name !== 'string') throw new TypeError('IDBVersionChangeEvent: name must be string');
 		if (typeof oldVersion !== 'number' && oldVersion !== 0) throw new TypeError('IDBVersionChangeEvent: oldVersion must be number');
 		if (typeof newVersion !== 'number') throw new TypeError('IDBVersionChangeEvent: newVersion must be number');
 
 		// Super.
-		super(name, { bubbles: false, cancelable: false });
 
 		// Public.
-		Object.defineProperty(this, 'oldVersion', { value: oldVersion, enumerable: true });
-		Object.defineProperty(this, 'newVersion', { value: newVersion, enumerable: true });
+		var _this7 = _possibleConstructorReturn(this, (IDBVersionChangeEvent.__proto__ || Object.getPrototypeOf(IDBVersionChangeEvent)).call(this, name, { bubbles: false, cancelable: false }));
+
+		Object.defineProperty(_this7, 'oldVersion', { value: oldVersion, enumerable: true });
+		Object.defineProperty(_this7, 'newVersion', { value: newVersion, enumerable: true });
 
 		// Lock it down.
-		Object.freeze(this);
+		Object.freeze(_this7);
+		return _this7;
 	}
-}
+
+	return IDBVersionChangeEvent;
+}(Event);
 
 // DOMException mock.
 // Name should be one of e.g. AbortError, ConstraintError, QuotaExceededError, UnknownError, NoError, VersionError
-class DOMException extends Error {
+
+
+var DOMException = function (_Error) {
+	_inherits(DOMException, _Error);
+
 	// Construct.
-	constructor(message = '', name = '') {
-		// Super.
-		super(message);
+	function DOMException() {
+		var message = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
+		var name = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '';
+
+		_classCallCheck(this, DOMException);
 
 		// Check.
+		var _this8 = _possibleConstructorReturn(this, (DOMException.__proto__ || Object.getPrototypeOf(DOMException)).call(this, message));
+		// Super.
+
+
 		if (typeof name !== 'string') throw new TypeError('DOMException: name must be string');
 
 		// Properties.
-		Object.defineProperty(this, 'name', { value: name });
+		Object.defineProperty(_this8, 'name', { value: name });
 
 		// Lock it down.
-		Object.freeze(this);
+		Object.freeze(_this8);
+		return _this8;
 	}
-}
+
+	return DOMException;
+}(Error);
 
 // Functions.
 
 // Reset data.
+
+
 function reset() {
 	// Delete everything.
-	for (const key in connections) delete connections[key];
-	for (const key in versions) delete versions[key];
-	for (const key in storage) delete storage[key];
+	for (var _key2 in connections) {
+		delete connections[_key2];
+	}for (var _key3 in versions) {
+		delete versions[_key3];
+	}for (var _key4 in storage) {
+		delete storage[_key4];
+	}
 }
 
 // Is the supplied identified a valid identifier?
-const r_identifier = /^[a-z_][a-zA-Z0-9_\-\$]*$/;
+var r_identifier = /^[a-z_][a-zA-Z0-9_\-\$]*$/;
 function validIdentifier(identifier) {
 	if (typeof identifier === 'string' && identifier.match(r_identifier)) return true;else return false;
 }
@@ -1485,9 +1638,10 @@ function validIdentifier(identifier) {
 function validKeyPath(keyPath) {
 	if (typeof keyPath === 'string') {
 		// Can be either 'abc' or 'abc.def'.
-		const keyPathParts = keyPath.split('.');
-		for (let i = 0; i < keyPathParts.length; i++) if (!validIdentifier(keyPathParts[i])) return false;
-		return true;
+		var keyPathParts = keyPath.split('.');
+		for (var i = 0; i < keyPathParts.length; i++) {
+			if (!validIdentifier(keyPathParts[i])) return false;
+		}return true;
 	} else return false;
 }
 
@@ -1497,8 +1651,9 @@ function validMultiKeyPath(keyPath) {
 	if (keyPath instanceof Array) {
 		// An array of otherwise valid single key paths.
 		if (keyPath.length < 1) return false;
-		for (let i = 0; i < keyPath.length; i++) if (!validKeyPath(keyPath[i])) return false;
-		return true;
+		for (var i = 0; i < keyPath.length; i++) {
+			if (!validKeyPath(keyPath[i])) return false;
+		}return true;
 	} else return false;
 }
 
@@ -1519,8 +1674,9 @@ function validKey(key) {
 function validKeyRange(key) {
 	if (key instanceof Array) {
 		if (key.length < 1) return false;
-		for (let i = 0; i < key.length; i++) if (!validKey(key[i]) && !validKeyRange(key[i])) return false;
-		return true;
+		for (var i = 0; i < key.length; i++) {
+			if (!validKey(key[i]) && !validKeyRange(key[i])) return false;
+		}return true;
 	}
 	if (key instanceof IDBKeyRange) return true;
 	return false;
@@ -1533,8 +1689,9 @@ function keyInRange(key, range) {
 
 	// Array ranges just test existance.
 	if (range instanceof Array) {
-		for (let i = 0; i < range.length; i++) if (keyInRange(key, range[i])) return true;
-		return false;
+		for (var i = 0; i < range.length; i++) {
+			if (keyInRange(key, range[i])) return true;
+		}return false;
 	}
 
 	// IDBKeyRanges test the key being inside the higher and lower range.
@@ -1558,9 +1715,10 @@ function clone(value) {
 		if (value.constructor !== Object) throw new Error('clone() can only clone plain objects');
 
 		// Deep clone the object.
-		const cloned = {};
-		for (const i in value) cloned[i] = clone(value[i]);
-		return cloned;
+		var cloned = {};
+		for (var i in value) {
+			cloned[i] = clone(value[i]);
+		}return cloned;
 	} else if (typeof value === 'number') {
 		// Finite numbers only.
 		// Things like Infinity and NaN are not
